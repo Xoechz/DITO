@@ -2,6 +2,7 @@
 using External.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -14,21 +15,25 @@ namespace External.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.2");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            modelBuilder.Entity("External.Data.Entities.ExternalUser", b =>
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("External.Data.Entities.ExternalDbUser", b =>
                 {
                     b.Property<string>("EmailAddress")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("CostCenterCode")
                         .HasMaxLength(4)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(4)");
 
-                    b.Property<string>("ExternalProperty")
+                    b.Property<string>("ExternalDbProperty")
                         .HasMaxLength(10)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(10)");
 
                     b.HasKey("EmailAddress");
 

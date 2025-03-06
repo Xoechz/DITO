@@ -14,7 +14,7 @@ namespace ValidationTracer.Data.Migrations
                 name: "CostCenters",
                 columns: table => new
                 {
-                    Code = table.Column<string>(type: "TEXT", maxLength: 4, nullable: false)
+                    Code = table.Column<string>(type: "nvarchar(4)", maxLength: 4, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -25,10 +25,11 @@ namespace ValidationTracer.Data.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    EmailAddress = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    ExternalProperty = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true),
-                    InternalProperty = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true),
-                    CostCenterCode = table.Column<string>(type: "TEXT", maxLength: 4, nullable: true)
+                    EmailAddress = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ExternalDbProperty = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    ExternalApiProperty = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    InternalProperty = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    CostCenterCode = table.Column<string>(type: "nvarchar(4)", maxLength: 4, nullable: true)
                 },
                 constraints: table =>
                 {

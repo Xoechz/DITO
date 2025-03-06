@@ -5,5 +5,5 @@ namespace External.Data;
 
 public class ExternalContext(DbContextOptions<ExternalContext> options) : DbContext(options)
 {
-    public DbSet<ExternalUser> ExternalUsers { get; set; }
+    public DbSet<ExternalDbUser> ExternalUsers { get; set; }
 }

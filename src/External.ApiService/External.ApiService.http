@@ -1,6 +1,0 @@
-@External.ApiService_HostAddress = http://localhost:5161
-
-GET {{External.ApiService_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

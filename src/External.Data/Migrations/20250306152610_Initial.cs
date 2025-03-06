@@ -14,12 +14,14 @@ namespace External.Data.Migrations
                 name: "ExternalUsers",
                 columns: table => new
                 {
-                    EmailAddress = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    ExternalProperty = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true),
-                    CostCenterCode = table.Column<string>(type: "TEXT", maxLength: 4, nullable: true)
+                    EmailAddress = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ExternalDbProperty = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    CostCenterCode = table.Column<string>(type: "nvarchar(4)", maxLength: 4, nullable: true)
                 },
                 constraints: table =>
-                    table.PrimaryKey("PK_ExternalUsers", x => x.EmailAddress));
+                {
+                    table.PrimaryKey("PK_ExternalUsers", x => x.EmailAddress);
+                });
         }
 
         /// <inheritdoc />

@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ValidationTracer.Data\ValidationTracer.Data.csproj" />
     <ProjectReference Include="..\ValidationTracer.ServiceDefaults\ValidationTracer.ServiceDefaults.csproj" />
   </ItemGroup>
 

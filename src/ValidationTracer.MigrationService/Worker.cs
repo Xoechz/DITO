@@ -62,10 +62,7 @@ public class Worker(
     private static async Task RunMigrationAsync(DbContext dbContext, CancellationToken cancellationToken)
     {
         var strategy = dbContext.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () =>
-        {
-            await dbContext.Database.MigrateAsync(cancellationToken);
-        });
+        await strategy.ExecuteAsync(async () => await dbContext.Database.MigrateAsync(cancellationToken));
     }
 
     private static async Task SeedDataAsync(ValidationTracerContext dbContext, CancellationToken cancellationToken)
@@ -78,7 +75,8 @@ public class Worker(
         User u = new()
         {
             EmailAddress = "1",
-            ExternalProperty = "1",
+            ExternalDbProperty = "1",
+            ExternalApiProperty = "1",
             InternalProperty = "1",
             CostCenterCode = "1"
         };
@@ -97,10 +95,10 @@ public class Worker(
 
     private static async Task SeedDataAsync(ExternalContext dbContext, CancellationToken cancellationToken)
     {
-        ExternalUser e = new()
+        ExternalDbUser e = new()
         {
             EmailAddress = "1",
-            ExternalProperty = "1",
+            ExternalDbProperty = "1",
             CostCenterCode = "1"
         };
 
