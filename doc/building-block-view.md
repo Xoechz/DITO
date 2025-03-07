@@ -10,7 +10,7 @@ eAPI[API];
 eDB[(Data)];
 end
 
-eAPI --HTTP--> Jobs;
+eAPI --HTTP--> API;
 eDB --EF--> Jobs;
 
 Jobs <--HTTP--> API;
