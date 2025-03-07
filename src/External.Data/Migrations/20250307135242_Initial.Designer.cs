@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace External.Data.Migrations
 {
     [DbContext(typeof(ExternalContext))]
-    [Migration("20250306152610_Initial")]
+    [Migration("20250307135242_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -29,10 +29,6 @@ namespace External.Data.Migrations
                     b.Property<string>("EmailAddress")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("CostCenterCode")
-                        .HasMaxLength(4)
-                        .HasColumnType("nvarchar(4)");
 
                     b.Property<string>("ExternalDbProperty")
                         .HasMaxLength(10)

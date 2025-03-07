@@ -1,6 +1,8 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var sql = builder.AddSqlServer("sql");
+var sql = builder.AddSqlServer("sql")
+    .WithDataVolume();
+
 var externalDb = sql.AddDatabase("external");
 var validationTracerDb = sql.AddDatabase("validationTracer");
 
@@ -12,9 +14,9 @@ var migration = builder.AddProject<Projects.ValidationTracer_MigrationService>("
 
 builder.AddProject<Projects.ValidationTracer_ApiService>("apiservice")
     .WithReference(validationTracerDb)
-    .WaitFor(migration);
+    .WaitForCompletion(migration);
 
 builder.AddProject<Projects.External_ApiService>("external-apiservice")
-    .WaitFor(migration);
+    .WaitForCompletion(migration);
 
 builder.Build().Run();

@@ -27,10 +27,6 @@ namespace External.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("CostCenterCode")
-                        .HasMaxLength(4)
-                        .HasColumnType("nvarchar(4)");
-
                     b.Property<string>("ExternalDbProperty")
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");

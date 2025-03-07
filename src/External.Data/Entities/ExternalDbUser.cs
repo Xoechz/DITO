@@ -9,7 +9,4 @@ public class ExternalDbUser
 
     [MaxLength(10)]
     public string? ExternalDbProperty { get; set; }
-
-    [MaxLength(4)]
-    public string? CostCenterCode { get; set; }
 }

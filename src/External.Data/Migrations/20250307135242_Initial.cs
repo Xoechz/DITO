@@ -15,8 +15,7 @@ namespace External.Data.Migrations
                 columns: table => new
                 {
                     EmailAddress = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    ExternalDbProperty = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
-                    CostCenterCode = table.Column<string>(type: "nvarchar(4)", maxLength: 4, nullable: true)
+                    ExternalDbProperty = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true)
                 },
                 constraints: table =>
                 {

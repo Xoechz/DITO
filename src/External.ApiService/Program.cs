@@ -1,3 +1,4 @@
+using External.ApiService.Faker;
 using ValidationTracer.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,8 @@ builder.AddServiceDefaults();
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddTransient<ExternalApiUserFaker>();
 
 var app = builder.Build();
 

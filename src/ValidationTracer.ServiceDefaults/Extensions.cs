@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using ValidationTracer.ServiceDefaults.Faker;
 
 namespace ValidationTracer.ServiceDefaults;
 
@@ -37,6 +38,8 @@ public static class Extensions
         // {
         //     options.AllowedSchemes = ["https"];
         // });
+
+        builder.Services.AddSingleton<EmailFaker>();
 
         return builder;
     }
