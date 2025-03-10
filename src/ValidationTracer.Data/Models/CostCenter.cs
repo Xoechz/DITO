@@ -1,4 +1,4 @@
-﻿namespace ValidationTracer.ApiService.Models;
+﻿namespace ValidationTracer.Data.Models;
 
 public class CostCenter
 {

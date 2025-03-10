@@ -1,17 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ValidationTracer.ApiService.Models;
-using ValidationTracer.Data;
+using ValidationTracer.Data.Models;
+using ValidationTracer.Data.Repositories;
 
 namespace ValidationTracer.ApiService.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class CostCenterController(ILogger<UserController> logger, ValidationTracerContext context) : ControllerBase
+public class CostCenterController(ILogger<UserController> logger, CostCenterRepository costCenterRepository) : ControllerBase
 {
     #region Private Fields
 
-    private readonly ValidationTracerContext _context = context;
+    private readonly CostCenterRepository _costCenterRepository = costCenterRepository;
     private readonly ILogger<UserController> _logger = logger;
 
     #endregion Private Fields
@@ -22,9 +21,7 @@ public class CostCenterController(ILogger<UserController> logger, ValidationTrac
     public async Task<IEnumerable<CostCenter>> Get()
     {
         _logger.LogInformation("Getting cost centers");
-        return await _context.CostCenters
-            .Select(c => new CostCenter { Code = c.Code })
-            .ToListAsync();
+        return await _costCenterRepository.GetCostCentersAsync();
     }
 
     #endregion Public Methods

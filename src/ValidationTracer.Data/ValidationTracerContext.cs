@@ -8,6 +8,7 @@ public class ValidationTracerContext(DbContextOptions<ValidationTracerContext> o
     #region Public Properties
 
     public DbSet<CostCenter> CostCenters { get; set; }
+
     public DbSet<User> Users { get; set; }
 
     #endregion Public Properties

@@ -9,18 +9,25 @@ public class CostCenterFaker : CachedFakerBase<CostCenter>
 
     public CostCenterFaker()
     {
-        List<string> existing = [];
+        List<int> existing = [];
 
         UseSeed(1)
             .RuleFor(c => c.Code, f =>
             {
-                var costCenter = f.Random.Number(0, 9999).ToString().PadLeft(4, '0');
+                if (existing.Count >= 10000)
+                {
+                    throw new InvalidOperationException("Cannot generate more than 10000 unique cost centers");
+                }
+
+                var costCenter = f.Random.Number(0, 9999);
+
                 while (existing.Contains(costCenter))
                 {
-                    costCenter = f.Random.Number(0, 9999).ToString().PadLeft(4, '0');
+                    costCenter = (costCenter + 1) % 10000;
                 }
+
                 existing.Add(costCenter);
-                return costCenter;
+                return costCenter.ToString().PadLeft(4, '0');
             });
     }
 
@@ -28,7 +35,7 @@ public class CostCenterFaker : CachedFakerBase<CostCenter>
 
     #region Public Properties
 
-    public override int CacheSize => 100;
+    public override int CacheSize => 5000;
 
     #endregion Public Properties
 }

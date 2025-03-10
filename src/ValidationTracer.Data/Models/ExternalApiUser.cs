@@ -1,4 +1,4 @@
-namespace External.ApiService.Models;
+﻿namespace ValidationTracer.Data.Models;
 
 public class ExternalApiUser
 {
@@ -6,7 +6,7 @@ public class ExternalApiUser
 
     public string? CostCenterCode { get; set; }
 
-    public required string EmailAddress { get; set; }
+    public string? EmailAddress { get; set; }
 
     public string? ExternalApiProperty { get; set; }
 

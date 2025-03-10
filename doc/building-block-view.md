@@ -13,7 +13,9 @@ end
 eAPI --HTTP--> API;
 eDB --EF--> Jobs;
 
-Jobs <--HTTP--> API;
+API --HTTP--> Jobs;
 API <--EF--> DB;
+
+Jobs --Log--> Result;
 
 :::

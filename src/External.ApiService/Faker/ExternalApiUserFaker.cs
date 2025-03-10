@@ -17,7 +17,11 @@ public class ExternalApiUserFaker : CachedFakerBase<ExternalApiUser>
                 emails.Remove(email);
                 return email;
             })
-            .RuleFor(u => u.ExternalApiProperty, f => f.Lorem.Word())
+            .RuleFor(u => u.ExternalApiProperty, f =>
+            {
+                var word = f.Lorem.Word();
+                return word.Length > 10 ? word[..10] : word;
+            })
             .RuleFor(u => u.CostCenterCode, f => f.Random.Number(0, 9999).ToString().PadLeft(4, '0'));
     }
 
