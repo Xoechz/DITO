@@ -1,6 +1,6 @@
 ﻿using Bogus;
 using External.ApiService.Models;
-using ValidationTracer.ServiceDefaults.Faker;
+using ValidationTracer.Common.Fakers;
 
 namespace External.ApiService.Faker;
 

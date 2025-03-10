@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "External.ApiService", "Exte
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValidationTracer.MigrationService", "ValidationTracer.MigrationService\ValidationTracer.MigrationService.csproj", "{64A65894-0CA8-48CE-8B1F-58E627F3F8CA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValidationTracer.Common", "ValidationTracer.Common\ValidationTracer.Common.csproj", "{26A3B188-22C1-4464-9B07-A27F98C057AF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,6 +127,18 @@ Global
 		{64A65894-0CA8-48CE-8B1F-58E627F3F8CA}.Release|x64.Build.0 = Release|Any CPU
 		{64A65894-0CA8-48CE-8B1F-58E627F3F8CA}.Release|x86.ActiveCfg = Release|Any CPU
 		{64A65894-0CA8-48CE-8B1F-58E627F3F8CA}.Release|x86.Build.0 = Release|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Debug|x64.Build.0 = Debug|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Debug|x86.Build.0 = Debug|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Release|x64.ActiveCfg = Release|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Release|x64.Build.0 = Release|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Release|x86.ActiveCfg = Release|Any CPU
+		{26A3B188-22C1-4464-9B07-A27F98C057AF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

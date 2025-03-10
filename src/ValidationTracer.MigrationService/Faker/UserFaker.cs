@@ -1,6 +1,6 @@
 ﻿using Bogus;
+using ValidationTracer.Common.Fakers;
 using ValidationTracer.Data.Entities;
-using ValidationTracer.ServiceDefaults.Faker;
 
 namespace ValidationTracer.MigrationService.Faker;
 

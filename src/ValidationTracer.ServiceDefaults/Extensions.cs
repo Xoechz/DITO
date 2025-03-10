@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
-using ValidationTracer.ServiceDefaults.Faker;
+using ValidationTracer.Common.Fakers;
 
 namespace ValidationTracer.ServiceDefaults;
 

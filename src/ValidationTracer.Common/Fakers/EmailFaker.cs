@@ -1,6 +1,6 @@
 ﻿using Bogus;
 
-namespace ValidationTracer.ServiceDefaults.Faker;
+namespace ValidationTracer.Common.Fakers;
 
 public class EmailFaker : Faker<string>
 {

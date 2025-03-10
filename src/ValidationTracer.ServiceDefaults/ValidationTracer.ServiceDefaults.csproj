@@ -20,4 +20,8 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ValidationTracer.Common\ValidationTracer.Common.csproj" />
+  </ItemGroup>
+
 </Project>
