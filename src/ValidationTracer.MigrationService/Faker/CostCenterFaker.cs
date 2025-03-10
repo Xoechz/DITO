@@ -1,10 +1,12 @@
-﻿using Bogus;
+﻿using ValidationTracer.Common.Fakers;
 using ValidationTracer.Data.Entities;
 
 namespace ValidationTracer.MigrationService.Faker;
 
-public class CostCenterFaker : Faker<CostCenter>
+public class CostCenterFaker : CachedFakerBase<CostCenter>
 {
+    #region Public Constructors
+
     public CostCenterFaker()
     {
         List<string> existing = [];
@@ -21,4 +23,12 @@ public class CostCenterFaker : Faker<CostCenter>
                 return costCenter;
             });
     }
+
+    #endregion Public Constructors
+
+    #region Public Properties
+
+    public override int CacheSize => 100;
+
+    #endregion Public Properties
 }

@@ -1,9 +1,9 @@
-﻿using Bogus;
+﻿namespace ValidationTracer.Common.Fakers;
 
-namespace ValidationTracer.Common.Fakers;
-
-public class EmailFaker : Faker<string>
+public class EmailFaker : CachedFakerBase<string>
 {
+    #region Public Constructors
+
     public EmailFaker()
     {
         List<string> existing = [];
@@ -27,9 +27,13 @@ public class EmailFaker : Faker<string>
                 existing.Add(email);
                 return email;
             });
-
-        Cache = Generate(10000);
     }
 
-    public List<string> Cache { get; }
+    #endregion Public Constructors
+
+    #region Public Properties
+
+    public override int CacheSize => 10000;
+
+    #endregion Public Properties
 }

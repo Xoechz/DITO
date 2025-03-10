@@ -2,12 +2,14 @@
 
 public class User
 {
-    public required string EmailAddress { get; set; }
-
-    public string? ExternalDbProperty { get; set; }
-    public string? ExternalApiProperty { get; set; }
-
-    public string? InternalProperty { get; set; }
+    #region Public Properties
 
     public string? CostCenterCode { get; set; }
+    public required string EmailAddress { get; set; }
+
+    public string? ExternalApiProperty { get; set; }
+    public string? ExternalDbProperty { get; set; }
+    public string? InternalProperty { get; set; }
+
+    #endregion Public Properties
 }

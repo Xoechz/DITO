@@ -15,13 +15,24 @@ public class Worker(IServiceProvider serviceProvider,
                     ExternalDbUserFaker externalDbUserFaker)
     : BackgroundService
 {
+    #region Public Fields
+
     public const string ActivitySourceName = "Migrations";
+
+    #endregion Public Fields
+
+    #region Private Fields
+
     private static readonly ActivitySource s_activitySource = new(ActivitySourceName);
     private readonly CostCenterFaker _costCenterFaker = costCenterFaker;
-    private readonly UserFaker _userFaker = userFaker;
     private readonly ExternalDbUserFaker _externalDbUserFaker = externalDbUserFaker;
-    private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly IHostApplicationLifetime _hostApplicationLifetime = hostApplicationLifetime;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly UserFaker _userFaker = userFaker;
+
+    #endregion Private Fields
+
+    #region Protected Methods
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -50,6 +61,10 @@ public class Worker(IServiceProvider serviceProvider,
         _hostApplicationLifetime.StopApplication();
     }
 
+    #endregion Protected Methods
+
+    #region Private Methods
+
     private static async Task EnsureDatabaseAsync(DbContext dbContext, CancellationToken cancellationToken)
     {
         var dbCreator = dbContext.GetService<IRelationalDatabaseCreator>();
@@ -74,8 +89,8 @@ public class Worker(IServiceProvider serviceProvider,
 
     private async Task SeedDataAsync(ValidationTracerContext dbContext, CancellationToken cancellationToken)
     {
-        var costCenters = _costCenterFaker.Generate(100);
-        var users = _userFaker.Generate(3000);
+        var costCenters = _costCenterFaker.Cache;
+        var users = _userFaker.Cache;
 
         var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
@@ -93,7 +108,7 @@ public class Worker(IServiceProvider serviceProvider,
 
     private async Task SeedDataAsync(ExternalContext dbContext, CancellationToken cancellationToken)
     {
-        var users = _externalDbUserFaker.Generate(2000).Skip(1000);
+        var users = _externalDbUserFaker.Cache;
         var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
@@ -105,4 +120,6 @@ public class Worker(IServiceProvider serviceProvider,
             await transaction.CommitAsync(cancellationToken);
         });
     }
+
+    #endregion Private Methods
 }

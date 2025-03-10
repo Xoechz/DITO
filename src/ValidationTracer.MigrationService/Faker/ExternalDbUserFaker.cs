@@ -1,11 +1,12 @@
-﻿using Bogus;
-using External.Data.Entities;
+﻿using External.Data.Entities;
 using ValidationTracer.Common.Fakers;
 
 namespace ValidationTracer.MigrationService.Faker;
 
-public class ExternalDbUserFaker : Faker<ExternalDbUser>
+public class ExternalDbUserFaker : CachedFakerBase<ExternalDbUser>
 {
+    #region Public Constructors
+
     public ExternalDbUserFaker(EmailFaker emailFaker)
     {
         var emails = emailFaker.Cache;
@@ -18,4 +19,12 @@ public class ExternalDbUserFaker : Faker<ExternalDbUser>
             })
             .RuleFor(u => u.ExternalDbProperty, f => f.Commerce.Product());
     }
+
+    #endregion Public Constructors
+
+    #region Public Properties
+
+    public override int CacheSize => 3000;
+
+    #endregion Public Properties
 }

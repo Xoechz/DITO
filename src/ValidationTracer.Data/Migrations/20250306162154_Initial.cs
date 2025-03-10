@@ -7,6 +7,18 @@ namespace ValidationTracer.Data.Migrations
     /// <inheritdoc />
     public partial class Initial : Migration
     {
+        #region Protected Methods
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "CostCenters");
+        }
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -47,14 +59,6 @@ namespace ValidationTracer.Data.Migrations
                 column: "CostCenterCode");
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropTable(
-                name: "Users");
-
-            migrationBuilder.DropTable(
-                name: "CostCenters");
-        }
+        #endregion Protected Methods
     }
 }

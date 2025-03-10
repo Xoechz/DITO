@@ -9,8 +9,14 @@ namespace ValidationTracer.ApiService.Controllers;
 [Route("[controller]")]
 public class UserController(ILogger<UserController> logger, ValidationTracerContext context) : ControllerBase
 {
-    private readonly ILogger<UserController> _logger = logger;
+    #region Private Fields
+
     private readonly ValidationTracerContext _context = context;
+    private readonly ILogger<UserController> _logger = logger;
+
+    #endregion Private Fields
+
+    #region Public Methods
 
     [HttpGet]
     public async Task<IEnumerable<User>> Get()
@@ -63,4 +69,6 @@ public class UserController(ILogger<UserController> logger, ValidationTracerCont
         await _context.SaveChangesAsync();
         return Ok();
     }
+
+    #endregion Public Methods
 }
