@@ -4,8 +4,11 @@ using ValidationTracer.ApiService.Jobs;
 using ValidationTracer.Common.Jobs;
 using ValidationTracer.Data;
 using ValidationTracer.Data.Repositories;
+using ValidationTracer.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 builder.AddSqlServerDbContext<ValidationTracerContext>("validationTracer");
 
@@ -23,7 +26,7 @@ builder.Services.AddHangfireServer()
             {
                 CommandBatchMaxTimeout = TimeSpan.FromHours(1),
                 SlidingInvisibilityTimeout = TimeSpan.FromMinutes(15),
-                QueuePollInterval = TimeSpan.Zero,
+                QueuePollInterval = TimeSpan.FromMinutes(1),
                 UseRecommendedIsolationLevel = true,
                 DisableGlobalLocks = true,
                 SchemaName = "hangfire"

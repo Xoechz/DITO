@@ -28,7 +28,7 @@ public class UserFaker : CachedFakerBase<User>
 
     #region Public Properties
 
-    public override int CacheSize => 1000;
+    public override int CacheSize => 3000;
 
     #endregion Public Properties
 }

@@ -33,7 +33,7 @@ public class EmailFaker : CachedFakerBase<string>
 
     #region Public Properties
 
-    public override int CacheSize => 10000;
+    public override int CacheSize => 5000;
 
     #endregion Public Properties
 }

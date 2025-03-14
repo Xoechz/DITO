@@ -1,6 +1,7 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 var sql = builder.AddSqlServer("sql")
+    .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume();
 
 var externalDb = sql.AddDatabase("external");
@@ -17,6 +18,10 @@ builder.AddProject<Projects.ValidationTracer_ApiService>("apiservice")
     .WaitForCompletion(migration);
 
 builder.AddProject<Projects.External_ApiService>("external-apiservice")
+    .WaitForCompletion(migration);
+
+builder.AddProject<Projects.ValidationTracer_JobService>("jobservice")
+    .WithReference(externalDb)
     .WaitForCompletion(migration);
 
 builder.Build().Run();

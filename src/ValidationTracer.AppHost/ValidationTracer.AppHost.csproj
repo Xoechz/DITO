@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\External.ApiService\External.ApiService.csproj" />
     <ProjectReference Include="..\ValidationTracer.ApiService\ValidationTracer.ApiService.csproj" />
+    <ProjectReference Include="..\ValidationTracer.JobService\ValidationTracer.JobService.csproj" />
     <ProjectReference Include="..\ValidationTracer.MigrationService\ValidationTracer.MigrationService.csproj" />
   </ItemGroup>
 

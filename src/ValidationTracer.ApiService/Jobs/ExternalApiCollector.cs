@@ -57,7 +57,7 @@ public class ExternalApiCollector(ILogger<ExternalApiCollector> logger,
             }
             else if (user.EmailAddress.Length > 20)
             {
-                _logger.LogWarning("User email address {EmailAddress} is longer than 20 characters.", user.EmailAddress);
+                _logger.LogError("User email address {EmailAddress} is longer than 20 characters.", user.EmailAddress);
             }
 
             if (existingUser is null)

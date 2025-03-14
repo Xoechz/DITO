@@ -8,9 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="9.1.0" />
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
+    <PackageReference Include="Hangfire.SqlServer" Version="1.8.18" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\External.Data\External.Data.csproj" />
     <ProjectReference Include="..\ValidationTracer.Data\ValidationTracer.Data.csproj" />
     <ProjectReference Include="..\ValidationTracer.ServiceDefaults\ValidationTracer.ServiceDefaults.csproj" />
   </ItemGroup>
