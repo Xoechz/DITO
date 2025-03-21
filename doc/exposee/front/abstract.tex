@@ -1,9 +1,8 @@
 \chapter{Abstract}
 
-Large Public Display Games place several specific design requirements. Such
-games need to work equally well for just a few or several simultaneous users.
-Also, entering, leaving, or joining a game in progress should be easily possible
-without interrupting the game's flow. This bachelor (master) thesis focuses on
-developing a game mechanics framework that supports the principle of smooth
-transition gameplay. This framework will then be evaluated utilizing a prototype
-implemented in a term project.
+Keeping track of distributed systems is hard as it is, but when moving a large amount of data from and to multiple endpoints, traditional logging often fails to answer questions about data quality and program reliability.
+Traces and metrics can help to mitigate these problems, but the data moving programs are often implemented as independent background jobs using different schedules, often even on independent machines.
+Luckily using OpenTelemetry you can unify traces across multiple machines easily with collectors, leaving only the problem of trace scope.
+The scope of a trace is normally one request or job execution, which makes keeping track of specific data points hard, this is what this thesis main focus is.\par
+The goal is to provide a way to collect, unify and then split traces into new traces showing data points traveling through a system. This stretches from creating traces with semantic events on the job level, 
+to combining traces from jobs working on the same data, then splitting and sampling these traces into multiple traces for each data point in an OpenTelemetry collector and finally generating metrics out of these traces to provide a big picture view.\par
