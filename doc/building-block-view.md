@@ -1,5 +1,5 @@
 :::mermaid
-flowchart LR
+flowchart TB
 subgraph Internal
 API;
 Jobs;
@@ -16,6 +16,19 @@ eDB --EF--> Jobs;
 API --HTTP--> Jobs;
 API <--EF--> DB;
 
-Jobs --Log--> Result;
+Jobs --CSV--> Result[Result File];
+
+subgraph OTEL Collector
+Process[Processing<br>----<br>Transform traces into data point specific traces and metrics]
+Sampling
+Exporter
+end
+
+Jobs -. Job Traces .- Process;
+API -. Job Traces .- Process;
+
+Process -. Data Traces .- Sampling;
+Process -. Metrics .- Exporter;
+Sampling -..- Exporter;
 
 :::
