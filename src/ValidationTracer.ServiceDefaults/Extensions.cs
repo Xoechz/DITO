@@ -8,6 +8,7 @@ using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using ValidationTracer.Common.Fakers;
+using Microsoft.Data.SqlClient;
 
 namespace ValidationTracer.ServiceDefaults;
 
@@ -68,12 +69,29 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
+                    .AddSqlClientInstrumentation()
                     .AddRuntimeInstrumentation();
             })
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
-                    .AddAspNetCoreInstrumentation()
+                    .AddAspNetCoreInstrumentation(o => o.Filter = (context) => !context.Request.Path.ToString().Contains("hangfire"))
+                    .AddEntityFrameworkCoreInstrumentation(o => o.SetDbStatementForText = true)
+                    .AddSqlClientInstrumentation(o =>
+                    {
+                        o.Enrich = (activity, _, cmd) =>
+                        {
+                            if (cmd is SqlCommand sqlCommand)
+                            {
+                                activity.SetTag("sql.command", sqlCommand.CommandText);
+                            }
+                        };
+                        o.Filter = (cmd) => cmd is SqlCommand sqlCommand
+                            && (sqlCommand.CommandText.Contains("SELECT")
+                                || sqlCommand.CommandText.Contains("INSERT")
+                                || sqlCommand.CommandText.Contains("UPDATE")
+                                || sqlCommand.CommandText.Contains("DELETE"));
+                    })
                     .AddHttpClientInstrumentation()
                     .AddHangfireInstrumentation();
             });
