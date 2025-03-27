@@ -1,5 +1,5 @@
 {
-    "cSpell.enabled": false,
+    "cSpell.enabled": true,
     "cSpell.words": [
         "biber",
         "Biblatex",
@@ -8,5 +8,6 @@
         "pdflatex",
         "smartquotes",
         "titlelanguage"
-    ]
+    ],
+    "cSpell.language": "en-GB,de-AT",
 }
