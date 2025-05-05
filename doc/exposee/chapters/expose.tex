@@ -48,6 +48,14 @@ These issues can often take a long time to fix, but they should not stop the ent
 The developers and decision makers do however need to be informed when, for how long and why errors are happening,
 without having to click through every applications logs.
 
+To help getting through this chaos, all the observability data, meaning logs, traces and metrics, should be
+collected to a single dashboard showing all the issues and the performance of the whole system.
+
+This alone is easily achieved using simple zero-code instrumentation and a telemetry backend of your choice
+like Jaeger, Zipkin, Prometheus or in this case Microsoft Application Insights. The problem with this solution
+is that the logs that get collected are very difficult to search through, especially if the amount of data and
+potential logs exceed a thousand entries per execution, while traces are almost unused.
+
 \section{Goals}
 
 \subsection{TO BE DELETED: NOTES}
@@ -67,13 +75,9 @@ without having to click through every applications logs.
 
 \subsection{ACTUAL TEXT}
 
-To help getting through this chaos, all the observability data, meaning logs, traces and metrics, should be
-collected to a single dashboard showing all the issues and the performance of the whole system.
+The improved solution to the problem requires making use of OpenTelemetry's extensibility and custom traces.
 
-This alone is easily achieved using simple zero-code instrumentation and a telemetry backend of your choice
-like Jaeger, Zipkin, Prometheus or in this case Microsoft Application Insights.
-
-WOS DRAUM SCHWA IS; WOS AUSAKEMMA SOI UND WIE I DES LÖS MIT COLLECTOREN UND SO
+WIE I DES LÖS MIT COLLECTOREN UND SO
 
 \section{Methodic ODA SO IRGENDWIE}
 
