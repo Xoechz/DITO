@@ -16,6 +16,9 @@ OpenTelemetry has established itself as a groundbreaking new standard in the wor
 It is replacing many vendor specific solutions with a single, standardized, extensible, open source
 and language integrated solution.
 
+OpenTelemetry has been designed with microservices in mind, but it is not exclusive to microservices.
+Distributed systems of all kinds, even legacy systems, can profit of OpenTelemetry. 
+
 \section{Problem}
 
 \subsection{TO BE DELETED: NOTES}
@@ -29,6 +32,21 @@ and language integrated solution.
 \end{itemize}
 
 \subsection{ACTUAL TEXT}
+
+A big problem in legacy systems, especially naturally grown ones, is that often no single source of truth exists.
+So data entries, like employee data, are often stored in multiple loosely connected sub systems.
+For example the information which employee has which manager could be stored in another subsystem
+as the information in which team an employee is working. Issues like these are often structural
+and can not directly and immediately be influenced by the developers tasked with dealing with the system.
+Unifying the data sources and saving them in a centralized system is a tedious and long undertaking,
+requiring the whole companies effort to clean up past technical dept and incorrect data.
+
+To keep the company operational while this is and to migrate the system step by step, 
+the data from the legacy sources needs to be synced with the new system, but there are bound to be mismatches, 
+invalid states and other errors, due to no single source of truth existing.
+These issues can often take a long time to fix, but they should not stop the entire syncing process.
+The developers and decision makers do however need to be informed when, for how long and why errors are happening,
+without having to click through every applications logs.
 
 \section{Goals}
 
@@ -48,6 +66,14 @@ and language integrated solution.
 \end{itemize}
 
 \subsection{ACTUAL TEXT}
+
+To help getting through this chaos, all the observability data, meaning logs, traces and metrics, should be
+collected to a single dashboard showing all the issues and the performance of the whole system.
+
+This alone is easily achieved using simple zero-code instrumentation and a telemetry backend of your choice
+like Jaeger, Zipkin, Prometheus or in this case Microsoft Application Insights.
+
+WOS DRAUM SCHWA IS; WOS AUSAKEMMA SOI UND WIE I DES LÖS MIT COLLECTOREN UND SO
 
 \section{Methodic ODA SO IRGENDWIE}
 
