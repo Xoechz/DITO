@@ -2,15 +2,15 @@
 
 \section{Motivation}
 
-\subsection{TO BE DELETED: NOTES}
+% \subsection{TO BE DELETED: NOTES}
 
-\begin{itemize}
-	\item Current State of OTEL and a future of very probable mass adoption(with citations)
-	\item OTEL not only in Microservices, but all distributed systems. Company wide observability
-	\item Transition to the problem, mentioning services which transfer a lot of data
-\end{itemize}
+% \begin{itemize}
+% 	\item Current State of OTEL and a future of very probable mass adoption(with citations)
+% 	\item OTEL not only in Microservices, but all distributed systems. Company wide observability
+% 	\item Transition to the problem, mentioning services which transfer a lot of data
+% \end{itemize}
 
-\subsection{ACTUAL TEXT}
+% \subsection{ACTUAL TEXT}
 
 OpenTelemetry has established itself as a groundbreaking new standard in the world of observability.
 It is replacing many vendor specific solutions with a single, standardized, extensible, open source
@@ -21,17 +21,17 @@ Distributed systems of all kinds, even legacy systems, can profit of OpenTelemet
 
 \section{Problem}
 
-\subsection{TO BE DELETED: NOTES}
+% \subsection{TO BE DELETED: NOTES}
 
-\begin{itemize}
-	\item Fractured company software systems with multiple sources of truth.
-	\item Merging and transferring data across multiple systems.
-	\item Inconsistent data
-	\item Notifying admins of the different single systems about data quality.
-	\item Concrete Problem - try to explain swietelsky hell
-\end{itemize}
+% \begin{itemize}
+% 	\item Fractured company software systems with multiple sources of truth.
+% 	\item Merging and transferring data across multiple systems.
+% 	\item Inconsistent data
+% 	\item Notifying admins of the different single systems about data quality.
+% 	\item Concrete Problem - try to explain our hell
+% \end{itemize}
 
-\subsection{ACTUAL TEXT}
+% \subsection{ACTUAL TEXT}
 
 A big problem in legacy systems, especially naturally grown ones, is that often no single source of truth exists.
 So data entries, like employee data, are often stored in multiple loosely connected sub systems.
@@ -58,34 +58,63 @@ potential logs exceed a thousand entries per execution, while traces are almost 
 
 \section{Goals}
 
-\subsection{TO BE DELETED: NOTES}
+% \subsection{TO BE DELETED: NOTES}
 
-\begin{itemize}
-	\item Explain Traces and Metrics in the context of OpenTelemetry.
-	\item Explain Collectors, their use, components and different types of Collectors.
-	\item Write a Collector in GO and generate traces in a .NET Application to
-	      \begin{itemize}
-		      \item Provide an overview over the data quality in the system.
-		      \item See where errors are happening and what their source could be.
-		      \item Have traces for every data point travelling through a system, next to the traces per job execution.
-		      \item Metrics which are able to be grouped by source, destination, entity being synced, job or machine executing the job.
-	      \end{itemize}
-	\item do that a bit more and a bit better lol
-\end{itemize}
+% \begin{itemize}
+% 	\item Explain Traces and Metrics in the context of OpenTelemetry.
+% 	\item Explain Collectors, their use, components and different types of Collectors.
+% 	\item Write a Collector in GO and generate traces in a .NET Application to
+% 	      \begin{itemize}
+% 		      \item Provide an overview over the data quality in the system.
+% 		      \item See where errors are happening and what their source could be.
+% 		      \item Have traces for every data point travelling through a system, next to the traces per job execution.
+% 		      \item Metrics which are able to be grouped by source, destination, entity being synced, job or machine executing the job.
+% 	      \end{itemize}
+% 	\item do that a bit more and a bit better lol
+% \end{itemize}
 
-\subsection{ACTUAL TEXT}
+% \subsection{ACTUAL TEXT}
 
-The improved solution to the problem requires making use of OpenTelemetry's extensibility and custom traces.
+The goal of this thesis can be split into two parts, the creation of traces for transferred data points
+and the collection and regrouping of these traces to represent the flow of data through the system.
+Creation is handled in the application code, while collection and regrouping is handled by a
+custom OpenTelemetry collector.
 
-WIE I DES LÖS MIT COLLECTOREN UND SO
+\subsubsection{Creation}
 
-\section{Methodic ODA SO IRGENDWIE}
+A trace should be created for each execution of a data transfer job,
+which contains child spans for every data point in this job.
+Those child spans contain the status of the transfer, the time,
+a type and an identification for the data point.
+The parent trace contains information about source, destination and a flag, indicating that the custom collector should
+work on this trace.
 
-\subsection{TO BE DELETED: NOTES}
+\subsubsection{Collection}
 
-\begin{itemize}
-	\item Explain Techstack(.net, golang)
-	\item Talk about Prototype and results
-\end{itemize}
+OpenTelemetry Traces, Metrics and Logs can be exported either directly to a telemetry backend, 
+or to a proxy, called a collector. This collector gathers telemetry data from different sources,
+performs operations like batching or filtering and then exports the telemetry data to different
+backends.
 
-\subsection{ACTUAL TEXT}
+The created traces are taken out of the normally exported data and are then regrouped based
+on the data point identification. They are first split into the spans for each data point,
+the spans are then grouped by their identification and then they get sampled and exported.
+
+Due to the jobs being independent of each other, the telemetry data has to be saved
+to be able to group jobs happening hours from each other.
+
+\section{Methodology}
+
+% \subsection{TO BE DELETED: NOTES}
+
+% \begin{itemize}
+% 	\item Explain Tech stack(.net, golang)
+% 	\item Talk about Prototype and results
+% \end{itemize}
+
+% \subsection{ACTUAL TEXT} 
+% Do gheat nu mea hea, generell gheat ois nu a weng umgschribm und mitn abstract obgstimmt.
+% KI kau do ah nu wos doa und de biblipgraphie gheat ah nu eina
+
+In the scope of this thesis a prototype will be created using C\verb|#| with .NET,
+for the base system, and GO, for the collector.
