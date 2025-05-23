@@ -48,7 +48,7 @@ trace should be processed by a custom collector.
 \subsection{Trace Collection and Regrouping}
 
 OpenTelemetry allows telemetry data to be exported either directly to a backend or via a collector.
-The custom collector developed in this thesis will intercept traces, extract spans based on data point identifiers,
+The extended collector developed in this thesis will intercept traces, extract spans based on data point identifiers,
 and regroup them into new traces that represent the journey of individual data points.
 These regrouped traces will then be sampled and exported.
 Since jobs may run independently and at different times,
@@ -60,7 +60,7 @@ This thesis will involve the development of a prototype system using two main te
 
 \begin{itemize}
     \item \textbf{.NET (C\#):} Used to implement the base system responsible for executing data transfer jobs and generating OpenTelemetry traces.
-    \item \textbf{GO (Golang):} Used to develop a custom OpenTelemetry collector that processes, filters, and reorganizes traces.
+    \item \textbf{GO (Golang):} Used to extend an OpenTelemetry collector with a custom processor that processes, filters, and reorganizes traces.
 \end{itemize}
 
 \subsection{Base System Development}
@@ -71,7 +71,7 @@ Each job execution will produce a trace with child spans for each data point,
 including metadata such as transfer status, timestamp, data type, and a unique identifier.
 
 \subsection{Custom Collector Implementation}
-A custom OpenTelemetry collector will be developed in Go.
+The OpenTelemetry collector will be expanded with a custom processor to reorganize traces.
 This collector will:
 
 \begin{itemize}
