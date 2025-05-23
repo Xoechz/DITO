@@ -2,119 +2,91 @@
 
 \section{Motivation}
 
-% \subsection{TO BE DELETED: NOTES}
+OpenTelemetry has established itself as a groundbreaking new standard in the field of observability~\cite{Young2024, Young2021}.
+It is replacing many vendor-specific solutions with a unified, standardized, extensible, open-source, 
+and language-integrated framework.
 
-% \begin{itemize}
-% 	\item Current State of OTEL and a future of very probable mass adoption(with citations)
-% 	\item OTEL not only in Microservices, but all distributed systems. Company wide observability
-% 	\item Transition to the problem, mentioning services which transfer a lot of data
-% \end{itemize}
-
-% \subsection{ACTUAL TEXT}
-
-OpenTelemetry has established itself as a groundbreaking new standard in the world of observability.
-It is replacing many vendor specific solutions with a single, standardized, extensible, open source
-and language integrated solution.
-
-OpenTelemetry has been designed with microservices in mind, but it is not exclusive to microservices.
-Distributed systems of all kinds, even legacy systems, can profit of OpenTelemetry. 
+While OpenTelemetry was initially designed with microservices in mind, its applicability extends far beyond that~\cite{Boten2022}.
+Distributed systems of all kinds, including legacy systems, can benefit significantly from its capabilities~\cite{Gomez_Blanco2023}.
 
 \section{Problem}
 
-% \subsection{TO BE DELETED: NOTES}
+A major challenge in legacy systems, especially those that have evolved organically over time,
+is the absence of a single source of truth~\cite{Flanders2024}.
+Data entries, such as employee information, are often stored across multiple, loosely connected subsystems.
+For instance, the data indicating which manager an employee reports to might reside in a
+different subsystem than the one storing team assignments.
+These structural issues are typically beyond the immediate control of developers.
+Centralizing and unifying these data sources is a complex and time-consuming process
+that requires a company-wide effort to address technical debt and correct historical inconsistencies.
 
-% \begin{itemize}
-% 	\item Fractured company software systems with multiple sources of truth.
-% 	\item Merging and transferring data across multiple systems.
-% 	\item Inconsistent data
-% 	\item Notifying admins of the different single systems about data quality.
-% 	\item Concrete Problem - try to explain our hell
-% \end{itemize}
+To maintain operational continuity during this transition, data from legacy systems must be synchronized with the new system.
+However, this migration is prone to mismatches, invalid states, and other errors due to the fragmented nature of the data.
+While these issues may take time to resolve, they should not halt the entire migration process.
 
-% \subsection{ACTUAL TEXT}
+Developers and decision-makers need to stay informed about when, why, and for how long errors
+occur, without having to manually sift through logs from multiple applications.
+A centralized observability dashboard that aggregates logs, traces, and metrics can provide this visibility.
 
-A big problem in legacy systems, especially naturally grown ones, is that often no single source of truth exists.
-So data entries, like employee data, are often stored in multiple loosely connected sub systems.
-For example the information which employee has which manager could be stored in another subsystem
-as the information in which team an employee is working. Issues like these are often structural
-and can not directly and immediately be influenced by the developers tasked with dealing with the system.
-Unifying the data sources and saving them in a centralized system is a tedious and long undertaking,
-requiring the whole companies effort to clean up past technical dept and incorrect data.
-
-To keep the company operational while this is and to migrate the system step by step, 
-the data from the legacy sources needs to be synced with the new system, but there are bound to be mismatches, 
-invalid states and other errors, due to no single source of truth existing.
-These issues can often take a long time to fix, but they should not stop the entire syncing process.
-The developers and decision makers do however need to be informed when, for how long and why errors are happening,
-without having to click through every applications logs.
-
-To help getting through this chaos, all the observability data, meaning logs, traces and metrics, should be
-collected to a single dashboard showing all the issues and the performance of the whole system.
-
-This alone is easily achieved using simple zero-code instrumentation and a telemetry backend of your choice
-like Jaeger, Zipkin, Prometheus or in this case Microsoft Application Insights. The problem with this solution
-is that the logs that get collected are very difficult to search through, especially if the amount of data and
-potential logs exceed a thousand entries per execution, while traces are almost unused.
+While basic telemetry collection is achievable using zero-code instrumentation and backends like Jaeger, Zipkin, Prometheus,
+or Microsoft Application Insights, the challenge lies in the volume and complexity of the logs.
+Traces, which are mostly underutilized, offer a more structured and insightful alternative~\cite{Young2021}.
 
 \section{Goals}
 
-% \subsection{TO BE DELETED: NOTES}
+The primary goal of this thesis can be split into two distinct parts:
+(1) to generate detailed traces for individual data points during data transfer jobs, and 
+(2) to collect and reorganize these traces to visualize the flow of data through the system.
 
-% \begin{itemize}
-% 	\item Explain Traces and Metrics in the context of OpenTelemetry.
-% 	\item Explain Collectors, their use, components and different types of Collectors.
-% 	\item Write a Collector in GO and generate traces in a .NET Application to
-% 	      \begin{itemize}
-% 		      \item Provide an overview over the data quality in the system.
-% 		      \item See where errors are happening and what their source could be.
-% 		      \item Have traces for every data point travelling through a system, next to the traces per job execution.
-% 		      \item Metrics which are able to be grouped by source, destination, entity being synced, job or machine executing the job.
-% 	      \end{itemize}
-% 	\item do that a bit more and a bit better lol
-% \end{itemize}
+\subsection{Trace Creation}
 
-% \subsection{ACTUAL TEXT}
+Each data transfer job execution should generate a trace that includes child spans for every data point processed.
+These spans will contain metadata such as transfer status, timestamp, data type, and a unique identifier.
+The parent span will include contextual information like source, destination, and a flag indicating that the 
+trace should be processed by a custom collector.
 
-The goal of this thesis can be split into two parts, the creation of traces for transferred data points
-and the collection and regrouping of these traces to represent the flow of data through the system.
-Creation is handled in the application code, while collection and regrouping is handled by a
-custom OpenTelemetry collector.
+\subsection{Trace Collection and Regrouping}
 
-\subsubsection{Creation}
-
-A trace should be created for each execution of a data transfer job,
-which contains child spans for every data point in this job.
-Those child spans contain the status of the transfer, the time,
-a type and an identification for the data point.
-The parent trace contains information about source, destination and a flag, indicating that the custom collector should
-work on this trace.
-
-\subsubsection{Collection}
-
-OpenTelemetry Traces, Metrics and Logs can be exported either directly to a telemetry backend, 
-or to a proxy, called a collector. This collector gathers telemetry data from different sources,
-performs operations like batching or filtering and then exports the telemetry data to different
-backends.
-
-The created traces are taken out of the normally exported data and are then regrouped based
-on the data point identification. They are first split into the spans for each data point,
-the spans are then grouped by their identification and then they get sampled and exported.
-
-Due to the jobs being independent of each other, the telemetry data has to be saved
-to be able to group jobs happening hours from each other.
+OpenTelemetry allows telemetry data to be exported either directly to a backend or via a collector.
+The custom collector developed in this thesis will intercept traces, extract spans based on data point identifiers,
+and regroup them into new traces that represent the journey of individual data points.
+These regrouped traces will then be sampled and exported.
+Since jobs may run independently and at different times,
+the collector must persist telemetry data to enable correlation across time.
 
 \section{Methodology}
 
-% \subsection{TO BE DELETED: NOTES}
+This thesis will involve the development of a prototype system using two main technologies:
 
-% \begin{itemize}
-% 	\item Explain Tech stack(.net, golang)
-% 	\item Talk about Prototype and results
-% \end{itemize}
+\begin{itemize}
+    \item \textbf{.NET (C\#):} Used to implement the base system responsible for executing data transfer jobs and generating OpenTelemetry traces.
+    \item \textbf{GO (Golang):} Used to develop a custom OpenTelemetry collector that processes, filters, and reorganizes traces.
+\end{itemize}
 
-% \subsection{ACTUAL TEXT} 
-% Do gheat nu mea hea, generell gheat ois nu a weng umgschribm und mitn abstract obgstimmt.
-% KI kau do ah nu wos doa und de biblipgraphie gheat ah nu eina
+\subsection{Base System Development}
+A .NET-based application will be implemented to simulate data transfer jobs.
+The application will be instrumented using the OpenTelemetry SDK to generate traces 
+enriched with semantic events and metadata.
+Each job execution will produce a trace with child spans for each data point,
+including metadata such as transfer status, timestamp, data type, and a unique identifier.
 
-In the scope of this thesis a prototype will be created using C\verb|#| with .NET,
-for the base system, and GO, for the collector.
+\subsection{Custom Collector Implementation}
+A custom OpenTelemetry collector will be developed in Go.
+This collector will:
+
+\begin{itemize}
+    \item Intercept and persist telemetry data.
+    \item Extract spans based on data point identifiers.
+    \item Regroup spans into new traces representing the journey of individual data points.
+    \item Sample and export the reorganized traces to a telemetry backend.
+\end{itemize}
+The collector must support delayed correlation of spans, as jobs may run independently and at different times.
+
+\subsection{Evaluation and Metrics}
+Metrics will be generated from the reorganized traces to provide insights into:
+\begin{itemize}
+    \item Data quality and consistency.
+    \item Frequency and duration of errors.
+    \item System performance across different jobs and machines.
+\end{itemize}
+These metrics will be visualized using a telemetry backend such as Microsoft Application Insights or Prometheus.

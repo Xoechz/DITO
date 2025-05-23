@@ -1,31 +1,27 @@
 \chapter{Kurzfassung}
 
 \begin{german}
-    Den Überblick über verteilte Softwaresysteme zu behalten, ist schon schwierig genug, 
-    aber wenn große Datenmengen von und zu mehreren Endpunkten transportiert werden,
-    scheitert traditionelles Logging oft daran Fragen über die Datenqualität
-    und Programmzuverlässigkeit zu beantworten.
+    Den Überblick über verteilte Softwaresysteme zu behalten, ist bereits eine Herausforderung.
+    Wenn jedoch große Datenmengen zwischen mehreren Endpunkten übertragen werden,
+    scheitert traditionelles Logging oft daran, Fragen zur Datenqualität und Zuverlässigkeit 
+    der Systeme zu beantworten.
     
-    Traces und Metriken können dabei helfen, diese Probleme zu bewältigen,
-    aber die Programme die diese Daten transferieren, sind oft als
-    unabhängige Hintergrund Prozesse mit unterschiedlichen Ausführungszeiten
-    implementiert, oft sogar auf unabhängigen Maschinen.
+    Traces und Metriken können helfen, diese Probleme zu bewältigen.
+    Die Programme, die diese Daten übertragen, sind jedoch häufig als
+    unabhängige Hintergrundprozesse mit unterschiedlichen Ausführungszeiten
+    implementiert, oft sogar auf voneinander unabhängigen Maschinen.
     
-    Glücklicherweise kann man mit OpenTelemetry Traces über mehrere Maschinen 
-    hinweg durch einen Kollektor vereinheitlichen.
-    Dadurch bleibt aber noch das Problem des Umfangs eines Traces.
+    Glücklicherweise ermöglicht OpenTelemetry die Vereinheitlichung von Traces über mehrere Maschinen
+    hinweg mithilfe eines Collectors.
+    Dennoch bleibt das Problem des Trace-Scopes bestehen:
+    Ein Trace umfasst in der Regel eine Anfrage oder die Ausführung eines Jobs,
+    was es schwierig macht, einzelne Datensätze nachzuverfolgen.
     
-    Der Umfang eines Traces ist normalerweise eine Anfrage oder Jobausführung.
-    Das macht es schwierig den Überblick über einzelne Datensätze zu behalten.
-    Der Fokus dieser Arbeit liegt darauf dieses Problem zu lösen.\par
-    
-    Das Ziel ist es, eine Möglichkeit zu schaffen, Traces zu sammeln, zu vereinheitlichen
-    und dann in neue Traces aufzuteilen, die  zeigen, wie sich Datenpunkte durch das System
-    bewegen. 
-    
-    Die Arbeit erstreckt sich von der Erstellung von Traces mit semantischen Ereignissen auf der Job Ebene,
-    über die Verbindung von Traces von verschieden Jobs, die an den gleichen Daten arbeiten,
-    dann das Aufteilen und Abtasten der Traces in je einen Trace für jeden Datenpunkt in einem OpenTelemetry
-    Kollektor und schließlich die Generierung von Metriken aus diesen Traces, um ein Gesamtbild
-    des Datentransfers zu erhalten.
+    Der Fokus dieser Arbeit liegt darauf, dieses Problem zu lösen.
+    Ziel ist es, eine Möglichkeit zu schaffen, Traces zu sammeln, zu vereinheitlichen
+    und anschließend in neue Traces aufzuteilen, die den Weg einzelner Datenpunkte durch das System zeigen.
+    Die Arbeit umfasst die Erstellung von Traces mit semantischen Ereignissen auf
+    Job-Ebene, die Verknüpfung von Traces verschiedener Jobs, die an denselben Daten arbeiten,
+    das Aufteilen und Abtasten dieser Traces in jeweils einen Trace pro Datenpunkt in einem OpenTelemetry Collector
+    sowie die Generierung von Metriken aus diesen Traces, um ein Gesamtbild des Datentransfers zu erhalten.
 \end{german}
