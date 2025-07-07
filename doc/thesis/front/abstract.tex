@@ -1,0 +1,23 @@
+\chapter{Abstract}
+
+Keeping track of distributed software systems is already a complex task.
+When large volumes of data are transferred between multiple endpoints, 
+traditional logging often fails to provide answers regarding data quality and system reliability.
+
+Traces and metrics can help to mitigate these issues, but the programs responsible for data transfer 
+are often implemented as independent background jobs with varying schedules,
+often even on independent machines.
+
+Fortunately, OpenTelemetry allows for the unification of traces across multiple machines using collectors.
+However, the issue of trace scope remains:
+a trace typically represents a single request or job execution,
+making it difficult to track specific data points.
+
+The focus of this thesis is solving this problem.
+The goal is to provide a method for collecting, unifying, and then splitting traces into
+new ones that illustrate how individual data points move through the system.
+The work includes generating traces with semantic events at the job level,
+linking traces from different jobs that process the same data,
+splitting and sampling these traces into one per data point using an OpenTelemetry collector,
+and finally generating metrics from these traces to provide a big picture view of data transfer.
+
