@@ -15,7 +15,8 @@
         "smartquotes",
         "Spoonhower",
         "titlelanguage",
-        "Zipkin"
+        "Zipkin",
+        "Goroutines"
     ],
     "cSpell.language": "en-GB,de-AT",
 }
