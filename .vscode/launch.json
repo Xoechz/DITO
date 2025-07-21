@@ -5,16 +5,23 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Run Go Sandbox",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/src/go-sandbox/main.go"
+        },
+        {
             "name": "Run ValidationTracer AppHost",
             "type": "f5anything",
-            "command": "dotnet run --project ${workspaceFolder}/src/ValidationTracer.AppHost/ValidationTracer.AppHost.csproj",
+            "command": "dotnet run --project ${workspaceFolder}/src/demo/ValidationTracer.AppHost/ValidationTracer.AppHost.csproj",
             "request": "launch"
         },
         {
             "name": "Debug ValidationTracer AppHost",
             "type": "dotnet",
             "request": "launch",
-            "projectPath": "${workspaceFolder}/src/ValidationTracer.AppHost/ValidationTracer.AppHost.csproj"
+            "projectPath": "${workspaceFolder}/src/demo/ValidationTracer.AppHost/ValidationTracer.AppHost.csproj"
         }
     ]
 }
