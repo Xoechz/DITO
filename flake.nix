@@ -1,5 +1,5 @@
 {
-  description = "ValidationTracer dotnet NixShell";
+  description = "ValidationTracer NixShell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,11 +12,16 @@
       in
       {
         default = pkgs.mkShell {
-          name = "dotnet";
+          name = "valid";
           nativeBuildInputs = with pkgs; [
             dotnetCorePackages.sdk_9_0
             dotnetCorePackages.runtime_9_0
             dotnetCorePackages.aspnetcore_9_0
+
+            go
+            gopls
+            delve
+            golangci-lint
           ];
 
           DOTNET_BIN = "${pkgs.dotnetCorePackages.sdk_9_0}/bin/dotnet";
