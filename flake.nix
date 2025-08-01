@@ -1,5 +1,5 @@
 {
-  description = "ValidationTracer NixShell";
+  description = "DITO NixShell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,7 +12,7 @@
       in
       {
         default = pkgs.mkShell {
-          name = "valid";
+          name = "DITO";
           nativeBuildInputs = with pkgs; [
             dotnetCorePackages.sdk_9_0
             dotnetCorePackages.runtime_9_0
