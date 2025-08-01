@@ -1,5 +1,7 @@
 # DITO
 
+![DITO](./doc/logo.svg)
+
 **D** ata and
 
 **I** nformation
