@@ -12,16 +12,16 @@
             "program": "${workspaceFolder}/src/go-sandbox/main.go"
         },
         {
-            "name": "Run ValidationTracer AppHost",
+            "name": "Run Demo AppHost",
             "type": "f5anything",
-            "command": "dotnet run --project ${workspaceFolder}/src/demo/ValidationTracer.AppHost/ValidationTracer.AppHost.csproj",
+            "command": "dotnet run --project ${workspaceFolder}/src/demo/Demo.AppHost/Demo.AppHost.csproj",
             "request": "launch"
         },
         {
-            "name": "Debug ValidationTracer AppHost",
+            "name": "Debug Demo AppHost",
             "type": "dotnet",
             "request": "launch",
-            "projectPath": "${workspaceFolder}/src/demo/ValidationTracer.AppHost/ValidationTracer.AppHost.csproj"
+            "projectPath": "${workspaceFolder}/src/demo/Demo.AppHost/Demo.AppHost.csproj"
         }
     ]
 }

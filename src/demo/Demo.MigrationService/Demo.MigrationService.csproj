@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-Demo.MigrationService-091ba7cc-b389-4c7f-a435-7441c98b8a7e</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="9.1.0" />
+    <PackageReference Include="Bogus" Version="35.6.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\External.Data\External.Data.csproj" />
+    <ProjectReference Include="..\Demo.Data\Demo.Data.csproj" />
+    <ProjectReference Include="..\Demo.ServiceDefaults\Demo.ServiceDefaults.csproj" />
+  </ItemGroup>
+</Project>
