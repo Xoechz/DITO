@@ -1,4 +1,5 @@
 using Demo.OpenTelemetry.Extensions;
+using Demo.ServiceDefaults.Faker;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +45,8 @@ public static class Extensions
         // {
         //     options.AllowedSchemes = ["https"];
         // });
+
+        builder.Services.AddSingleton<EmailFaker>();
 
         return builder;
     }

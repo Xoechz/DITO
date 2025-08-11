@@ -1,6 +1,6 @@
 using Demo.Data.Models;
 
-namespace Demo.Jobs.Config;
+namespace Demo.JobService.Config;
 
 public class JobConfig
 {

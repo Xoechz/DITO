@@ -15,16 +15,30 @@ public class UserRepository(DemoContext demoContext, ILogger<UserRepository> log
 
     #region Public Methods
 
-    public async Task AddUserAsync(User user)
+    public async Task<bool> AddUserAsync(User user)
     {
         if (user.Error == ErrorType.Validation)
         {
             _logger.LogError("Validation error for user with email {EmailAddress}", user.EmailAddress);
-            return;
+            return false;
         }
         else if (user.Error == ErrorType.Critical)
         {
             throw new InvalidOperationException("Critical error occurred while adding user");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.EmailAddress))
+        {
+            _logger.LogError("Email address is required");
+            throw new InvalidOperationException("Email address cannot be null or empty");
+        }
+
+        var userExists = await _context.Users.AnyAsync(u => u.EmailAddress == user.EmailAddress);
+
+        if (userExists)
+        {
+            _logger.LogWarning("User with email {EmailAddress} already exists", user.EmailAddress);
+            return false;
         }
 
         var entity = new Entities.User
@@ -34,6 +48,7 @@ public class UserRepository(DemoContext demoContext, ILogger<UserRepository> log
 
         _context.Users.Add(entity);
         await _context.SaveChangesAsync();
+        return true;
     }
 
     public async Task DeleteUserAsync(string emailAddress)
@@ -62,7 +77,7 @@ public class UserRepository(DemoContext demoContext, ILogger<UserRepository> log
 
     #region Private Methods
 
-    private ErrorType GetRandomErrorType(IDictionary<ErrorType, decimal> errorChances)
+    private static ErrorType GetRandomErrorType(IDictionary<ErrorType, decimal> errorChances)
     {
         var randomValue = (decimal)new Random().NextDouble();
         var cumulativeChance = 0.0m;

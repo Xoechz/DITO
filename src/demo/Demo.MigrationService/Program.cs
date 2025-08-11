@@ -1,18 +1,15 @@
 using Demo.Data;
 using Demo.MigrationService;
-using Demo.MigrationService.Faker;
 using Demo.ServiceDefaults;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.AddServiceDefaults();
 builder.Services.AddHostedService<Worker>();
 
-var serviceName = builder.Configuration["SERVICE_NAME"]
+var serviceIndex = builder.Configuration["SERVICE_INDEX"]
     ?? throw new InvalidOperationException();
 
-builder.AddSqlServerDbContext<DemoContext>("DB-" + serviceName);
-
-builder.Services.AddTransient<UserFaker>();
+builder.AddSqlServerDbContext<DemoContext>("DB-" + serviceIndex);
 
 var host = builder.Build();
 host.Run();

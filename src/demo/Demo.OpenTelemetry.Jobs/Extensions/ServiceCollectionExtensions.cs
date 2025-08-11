@@ -1,9 +1,9 @@
-﻿using Hangfire;
+﻿using Demo.OpenTelemetry.Extensions;
+using Demo.OpenTelemetry.Jobs.Filters;
+using Hangfire;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Demo.OpenTelemetry.Extensions;
-using Demo.OpenTelemetry.Jobs.Filters;
 
 namespace Demo.OpenTelemetry.Jobs.Extensions;
 
@@ -30,5 +30,5 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    #endregion
+    #endregion Public Methods
 }

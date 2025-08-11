@@ -1,5 +1,5 @@
 using Demo.Data;
-using Demo.MigrationService.Faker;
+using Demo.ServiceDefaults.Faker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -9,16 +9,16 @@ namespace Demo.MigrationService;
 
 public class Worker(IServiceProvider serviceProvider,
                     IHostApplicationLifetime hostApplicationLifetime,
-                    UserFaker userFaker,
+                    EmailFaker emailFaker,
                     ActivitySource activitySource)
     : BackgroundService
 {
     #region Private Fields
 
     private readonly ActivitySource _activitySource = activitySource;
+    private readonly EmailFaker _emailFaker = emailFaker;
     private readonly IHostApplicationLifetime _hostApplicationLifetime = hostApplicationLifetime;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly UserFaker _userFaker = userFaker;
 
     #endregion Private Fields
 
@@ -26,7 +26,7 @@ public class Worker(IServiceProvider serviceProvider,
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        using var activity = _activitySource.StartActivity("Migrating database", ActivityKind.Client);
+        using var activity = _activitySource.StartActivity("Migrating database", ActivityKind.Internal);
 
         try
         {
@@ -74,14 +74,14 @@ public class Worker(IServiceProvider serviceProvider,
 
     private async Task SeedDataAsync(DemoContext dbContext, CancellationToken cancellationToken)
     {
-        var users = _userFaker.Generate(100).Select(u => new Data.Entities.User { EmailAddress = u.EmailAddress });
+        var users = _emailFaker.Generate(100).Select(e => new Data.Entities.User { EmailAddress = e });
 
         var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
             // Seed the database
             await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-            await dbContext.Users.ExecuteDeleteAsync();
+            dbContext.Users.RemoveRange(dbContext.Users);
             await dbContext.Users.AddRangeAsync(users, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);

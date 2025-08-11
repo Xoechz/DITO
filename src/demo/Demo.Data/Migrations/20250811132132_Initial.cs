@@ -7,6 +7,15 @@ namespace Demo.Data.Migrations
     /// <inheritdoc />
     public partial class Initial : Migration
     {
+        #region Protected Methods
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "Users");
+        }
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -16,17 +25,9 @@ namespace Demo.Data.Migrations
                 {
                     EmailAddress = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Users", x => x.EmailAddress);
-                });
+                constraints: table => table.PrimaryKey("PK_Users", x => x.EmailAddress));
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropTable(
-                name: "Users");
-        }
+        #endregion Protected Methods
     }
 }

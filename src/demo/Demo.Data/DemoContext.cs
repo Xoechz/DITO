@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Demo.Data.Entities;
+﻿using Demo.Data.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Demo.Data;
 

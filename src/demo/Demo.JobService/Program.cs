@@ -1,6 +1,7 @@
-using Demo.Common.Jobs;
 using Demo.Data;
+using Demo.Data.Models;
 using Demo.Data.Repositories;
+using Demo.JobService.Config;
 using Demo.JobService.Jobs;
 using Demo.ServiceDefaults;
 using Hangfire;
@@ -9,13 +10,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-var serviceName = builder.Configuration["SERVICE_NAME"]
+var serviceIndex = builder.Configuration["SERVICE_INDEX"]
     ?? throw new InvalidOperationException();
 
-var connectionString = builder.Configuration.GetConnectionString("DB-" + serviceName)
-    ?? throw new InvalidOperationException("Connection String DB-" + serviceName + " is not configured.");
+var connectionString = builder.Configuration.GetConnectionString("DB-" + serviceIndex)
+    ?? throw new InvalidOperationException("Connection String DB-" + serviceIndex + " is not configured.");
 
-builder.AddSqlServerDbContext<DemoContext>("DB-" + serviceName);
+builder.AddSqlServerDbContext<DemoContext>("DB-" + serviceIndex);
 
 builder.Services.AddHangfireServer()
     .AddSingleton<RecurringJobScheduler>()
@@ -27,10 +28,25 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<UserRepository>();
 
+var urls = builder.Configuration["TARGET_URLS"]
+    ?? throw new InvalidOperationException("TARGET_URLS is not configured.");
+
+builder.Services.AddSingleton(new JobConfig
+{
+    TargetUrls = urls.Split(",").Select(u => u.Trim()),
+    CronExpression = builder.Configuration["CRON_EXPRESSION"],
+    ErrorChances = builder.Configuration.GetValue<IDictionary<ErrorType, decimal>>("ERROR_CHANCES")
+        ?? new Dictionary<ErrorType, decimal>
+    {
+        { ErrorType.None, 0.99m },
+        { ErrorType.Validation, 0.09m },
+        { ErrorType.Critical, 0.01m },
+    }
+});
+
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
-app.UseHttpsRedirection();
 app.MapControllers();
 app.UseSwagger();
 app.UseSwaggerUI();

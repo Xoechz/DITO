@@ -1,22 +1,21 @@
 using Demo.Data.Models;
 using Demo.Data.Repositories;
-using Demo.Jobs.Config;
+using Demo.JobService.Config;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
-namespace Demo.Job.Controllers;
+namespace Demo.JobService.Controller;
 
 [ApiController]
 [Route("[controller]")]
 public class UserController(ILogger<UserController> logger,
                             UserRepository userRepository,
-                            IOptions<JobConfig> options)
+                            JobConfig config)
     : ControllerBase
 {
     #region Private Fields
 
+    private readonly JobConfig _config = config;
     private readonly ILogger<UserController> _logger = logger;
-    private readonly IOptions<JobConfig> _options = options;
     private readonly UserRepository _userRepository = userRepository;
 
     #endregion Private Fields
@@ -34,7 +33,7 @@ public class UserController(ILogger<UserController> logger,
     public async Task<IEnumerable<User>> Get()
     {
         _logger.LogInformation("Getting users");
-        return await _userRepository.GetUsersAsync(_options.Value.ErrorChances);
+        return await _userRepository.GetUsersAsync(_config.ErrorChances);
     }
 
     [HttpPost]

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -9,11 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="9.4.0" />
-    <PackageReference Include="Bogus" Version="35.6.3" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="9.0.3" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="9.0.3" />
   </ItemGroup>
 
   <ItemGroup>

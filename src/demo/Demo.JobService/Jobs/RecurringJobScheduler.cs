@@ -1,7 +1,6 @@
-﻿using Demo.JobService.Jobs;
-using Hangfire;
+﻿using Hangfire;
 
-namespace Demo.Common.Jobs;
+namespace Demo.JobService.Jobs;
 
 public class RecurringJobScheduler(ILogger<RecurringJobScheduler> logger,
                                    IRecurringJobManager recurringJobManager,

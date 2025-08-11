@@ -12,12 +12,12 @@ namespace Demo.OpenTelemetry.Jobs.Filters;
 /// <param name="activitySource"><see cref="ActivitySource"/> to create an OpenTelemetry Trace</param>
 public class OpenTelemetryHangfireFilter(ActivitySource activitySource) : IApplyStateFilter, IServerFilter
 {
-    #region Private Members
+    #region Private Fields
 
     private readonly Dictionary<string, Activity> _activities = [];
     private readonly ActivitySource _activitySource = activitySource;
 
-    #endregion
+    #endregion Private Fields
 
     #region Public Methods
 
@@ -97,5 +97,5 @@ public class OpenTelemetryHangfireFilter(ActivitySource activitySource) : IApply
         // No action needed when state is unapplied
     }
 
-    #endregion
+    #endregion Public Methods
 }

@@ -1,25 +1,25 @@
 ﻿using Demo.Data.Models;
 using Demo.Data.Repositories;
-using Demo.Jobs.Config;
-using Microsoft.Extensions.Options;
+using Demo.JobService.Config;
+using System.Diagnostics;
 
 namespace Demo.JobService.Jobs;
 
-public class JobWorker(ILogger<JobWorker> logger,
+public class JobWorker(ActivitySource activitySource,
                        UserRepository userRepository,
-                       IOptions<JobConfig> options)
+                       JobConfig config)
 {
     #region Private Fields
 
-    private readonly ILogger<JobWorker> _logger = logger;
-    private readonly IOptions<JobConfig> _options = options;
+    private readonly ActivitySource _activitySource = activitySource;
+    private readonly JobConfig _config = config;
     private readonly UserRepository _userRepository = userRepository;
 
     #endregion Private Fields
 
     #region Public Properties
 
-    public string CronExpression => _options.Value.CronExpression ?? "0 0 31 2 *";
+    public string CronExpression => _config.CronExpression ?? "0 0 31 2 *";
 
     #endregion Public Properties
 
@@ -27,15 +27,27 @@ public class JobWorker(ILogger<JobWorker> logger,
 
     public async Task DoWork(CancellationToken cancellationToken)
     {
+        using var activity = _activitySource.StartActivity("Worker started", ActivityKind.Consumer);
         using var httpClient = new HttpClient();
-        var randomIndex = new Random().Next(0, _options.Value.TargetUrls.Count());
 
-        httpClient.BaseAddress = new Uri(_options.Value.TargetUrls.ElementAt(randomIndex)
-            ?? throw new InvalidOperationException("No target URL provided"));
+        var randomIndex = new Random().Next(0, _config.TargetUrls.Count());
+        var targetUrl = _config.TargetUrls.ElementAt(randomIndex)
+            ?? throw new InvalidOperationException("No target URL provided");
+
+        activity?.SetTag("TargetUrl", targetUrl);
+
+        httpClient.BaseAddress = new Uri(targetUrl);
 
         var response = await httpClient.GetAsync("User", cancellationToken);
         var users = await response.Content.ReadFromJsonAsync<IEnumerable<User>>(cancellationToken)
             ?? throw new InvalidOperationException("Failed to retrieve users from external API");
+
+        activity?.SetTag("UserCount", users.Count());
+
+        foreach (var user in users)
+        {
+            await _userRepository.AddUserAsync(user);
+        }
     }
 
     #endregion Public Methods

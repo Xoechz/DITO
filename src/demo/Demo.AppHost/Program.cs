@@ -4,19 +4,27 @@ var sql = builder.AddSqlServer("sql")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume();
 
-List<string> serviceNames = ["Service0", "Service1", "Service2", "Service3", "Service4", "Service5", "Service6", "Service7", "Service8", "Service9"];
+var services = Enumerable.Range(0, 10);
+var urls = string.Join(",", services.Select(i => "http://127.0.0.1:" + (5280 + i)));
 
-foreach (var serviceName in serviceNames)
+foreach (var serviceIndex in services)
 {
-    var demoDb = sql.AddDatabase("DB-" + serviceName);
+    var serviceName = "Service-" + serviceIndex;
+    var demoDb = sql.AddDatabase("DB-" + serviceIndex);
 
-    var migration = builder.AddProject<Projects.Demo_MigrationService>("Migration-" + serviceName)
-        .WithEnvironment("SERVICE_NAME", serviceName)
+    var migration = builder.AddProject<Projects.Demo_MigrationService>("Migration-" + serviceIndex)
+        .WithEnvironment("SERVICE_NAME", "Migration-" + serviceIndex)
+        .WithEnvironment("SERVICE_INDEX", serviceIndex.ToString())
         .WithReference(demoDb)
         .WaitFor(demoDb);
 
     builder.AddProject<Projects.Demo_JobService>(serviceName)
         .WithEnvironment("SERVICE_NAME", serviceName)
+        .WithEnvironment("SERVICE_INDEX", serviceIndex.ToString())
+        .WithEnvironment("TARGET_URLS", urls)
+        .WithEnvironment("CRON_EXPRESSION", "*/" + (serviceIndex + 1) + " * * * *")
+        .WithHttpEndpoint(5280 + serviceIndex)
+        .WithHttpsEndpoint(7160 + serviceIndex)
         .WithReference(demoDb)
         .WaitForCompletion(migration);
 }
