@@ -1,4 +1,3 @@
-using External.Data;
 using Demo.Data;
 using Demo.MigrationService;
 using Demo.MigrationService.Faker;
@@ -8,15 +7,12 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.AddServiceDefaults();
 builder.Services.AddHostedService<Worker>();
 
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing => tracing.AddSource(Worker.ActivitySourceName));
+var serviceName = builder.Configuration["SERVICE_NAME"]
+    ?? throw new InvalidOperationException();
 
-builder.AddSqlServerDbContext<ExternalContext>("external");
-builder.AddSqlServerDbContext<DemoContext>("demo");
+builder.AddSqlServerDbContext<DemoContext>("DB-" + serviceName);
 
-builder.Services.AddTransient<CostCenterFaker>();
 builder.Services.AddTransient<UserFaker>();
-builder.Services.AddTransient<ExternalDbUserFaker>();
 
 var host = builder.Build();
 host.Run();

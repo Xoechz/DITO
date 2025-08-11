@@ -17,8 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\External.ApiService\External.ApiService.csproj" />
-    <ProjectReference Include="..\Demo.ApiService\Demo.ApiService.csproj" />
     <ProjectReference Include="..\Demo.JobService\Demo.JobService.csproj" />
     <ProjectReference Include="..\Demo.MigrationService\Demo.MigrationService.csproj" />
   </ItemGroup>

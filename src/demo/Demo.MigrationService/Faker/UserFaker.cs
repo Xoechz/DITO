@@ -1,34 +1,18 @@
 ﻿using Bogus;
-using Demo.Common.Fakers;
-using Demo.Data.Entities;
+using Demo.Data.Models;
 
 namespace Demo.MigrationService.Faker;
 
-public class UserFaker : CachedFakerBase<User>
+public class UserFaker : Faker<User>
 {
     #region Public Constructors
 
-    public UserFaker(EmailFaker emailFaker,
-                     CostCenterFaker costCenterFaker)
+    public UserFaker()
     {
-        var emails = emailFaker.Cache;
-        var costCenters = costCenterFaker.Cache;
         UseSeed(1)
-            .RuleFor(u => u.EmailAddress, f =>
-            {
-                var email = f.PickRandom(emails);
-                emails.Remove(email);
-                return email;
-            })
-            .RuleFor(u => u.InternalProperty, f => f.Random.AlphaNumeric(10))
-            .RuleFor(u => u.CostCenterCode, f => f.PickRandom(costCenters).OrNull(f)?.Code);
+            .RuleFor(u => u.EmailAddress, f => f.Internet.Email())
+            .RuleFor(u => u.Error, f => f.PickRandom<ErrorType>());
     }
 
     #endregion Public Constructors
-
-    #region Public Properties
-
-    public override int CacheSize => 3000;
-
-    #endregion Public Properties
 }

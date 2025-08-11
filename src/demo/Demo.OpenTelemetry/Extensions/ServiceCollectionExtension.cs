@@ -19,6 +19,53 @@ public static class ServiceCollectionExtension
     #region Public Methods
 
     /// <summary>
+    /// Configures basic OpenTelemetry.
+    /// </summary>
+    /// <param name="services"><see cref="IServiceCollection"/></param>
+    /// <param name="configuration"><see cref="IConfiguration"/></param>
+    /// <returns><see cref="IServiceCollection"/> for method chaining</returns>
+    public static IServiceCollection ConfigureBasicOpenTelemetry(this IServiceCollection services, IConfiguration configuration)
+    {
+        var otelBuilder = services.AddOpenTelemetry()
+            .WithLogging()
+            .WithMetrics(metrics =>
+            {
+                metrics.AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddSqlClientInstrumentation()
+                    .AddRuntimeInstrumentation()
+                    .AddProcessInstrumentation();
+            })
+            .WithTracing(tracing =>
+            {
+                tracing.AddAspNetCoreInstrumentation()
+                    .AddEntityFrameworkCoreInstrumentation()
+                    .AddHttpClientInstrumentation();
+            });
+
+        // Check if the OTLP exporter or Azure Monitor is configured via environment variables.
+        var useOtlpExporter = !string.IsNullOrWhiteSpace(configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
+        var useAzureMonitor = !string.IsNullOrWhiteSpace(configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]);
+
+        if (useOtlpExporter)
+        {
+            // Aspire sets the OTEL_EXPORTER_OTLP_ENDPOINT environment variable to the OpenTelemetry Collector endpoint automatically.
+            // This is then only used locally.
+            // Without Aspire no local OpenTelemetry Collector is used.
+            otelBuilder.UseOtlpExporter();
+        }
+
+        if (useAzureMonitor)
+        {
+            // If the APPLICATIONINSIGHTS_CONNECTION_STRING environment variable is set, the Azure Monitor exporter is used.
+            // Application Insights is a subsystem of Azure Monitor.
+            otelBuilder.UseAzureMonitorExporter();
+        }
+
+        return services;
+    }
+
+    /// <summary>
     /// The swietelsky way for OpenTelemetry configuration.
     /// </summary>
     /// <param name="services"><see cref="IServiceCollection"/></param>
@@ -112,51 +159,5 @@ public static class ServiceCollectionExtension
         return services;
     }
 
-    /// <summary>
-    /// Configures basic OpenTelemetry.
-    /// </summary>
-    /// <param name="services"><see cref="IServiceCollection"/></param>
-    /// <returns><see cref="IServiceCollection"/> for method chaining</returns>
-    public static IServiceCollection ConfigureBasicOpenTelemetry(this IServiceCollection services)
-    {
-        var otelBuilder = services.AddOpenTelemetry()
-            .WithLogging()
-            .WithMetrics(metrics =>
-            {
-                metrics.AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddSqlClientInstrumentation()
-                    .AddRuntimeInstrumentation()
-                    .AddProcessInstrumentation();
-            })
-            .WithTracing(tracing =>
-            {
-                tracing.AddAspNetCoreInstrumentation()
-                    .AddEntityFrameworkCoreInstrumentation()
-                    .AddHttpClientInstrumentation();
-            });
-
-        // Check if the OTLP exporter or Azure Monitor is configured via environment variables.
-        var useOtlpExporter = !string.IsNullOrWhiteSpace(configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
-        var useAzureMonitor = !string.IsNullOrWhiteSpace(configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]);
-
-        if (useOtlpExporter)
-        {
-            // Aspire sets the OTEL_EXPORTER_OTLP_ENDPOINT environment variable to the OpenTelemetry Collector endpoint automatically.
-            // This is then only used locally.
-            // Without Aspire no local OpenTelemetry Collector is used.
-            otelBuilder.UseOtlpExporter();
-        }
-
-        if (useAzureMonitor)
-        {
-            // If the APPLICATIONINSIGHTS_CONNECTION_STRING environment variable is set, the Azure Monitor exporter is used.
-            // Application Insights is a subsystem of Azure Monitor.
-            otelBuilder.UseAzureMonitorExporter();
-        }
-
-        return services;
-    }
-
-    #endregion
+    #endregion Public Methods
 }

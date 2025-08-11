@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Demo.Data.Models;
+﻿using Demo.Data.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Demo.Data.Repositories;
 
@@ -16,12 +17,12 @@ public class UserRepository(DemoContext demoContext, ILogger<UserRepository> log
 
     public async Task AddUserAsync(User user)
     {
-        if(user.Error == ErrorType.Validation)
+        if (user.Error == ErrorType.Validation)
         {
             _logger.LogError("Validation error for user with email {EmailAddress}", user.EmailAddress);
             return;
         }
-        else if(user.Error == ErrorType.Critical)
+        else if (user.Error == ErrorType.Critical)
         {
             throw new InvalidOperationException("Critical error occurred while adding user");
         }
@@ -50,21 +51,21 @@ public class UserRepository(DemoContext demoContext, ILogger<UserRepository> log
         }
     }
 
-    public async Task<IEnumerable<User>> GetUsersAsync(Dictionary<ErrorType, decimal>? errorChances = null)
+    public async Task<IEnumerable<User>> GetUsersAsync(IDictionary<ErrorType, decimal>? errorChances = null)
          => await _context.Users.Select(entity => new User
          {
              EmailAddress = entity.EmailAddress,
-             Error = errorChances is not null ? GetRandomErrorType(errorChances) : ErrorType.None
+             Error = errorChances != null ? GetRandomErrorType(errorChances) : ErrorType.None
          }).ToListAsync();
 
     #endregion Public Methods
 
     #region Private Methods
 
-    private ErrorType GetRandomErrorType(Dictionary<ErrorType, decimal> errorChances)
+    private ErrorType GetRandomErrorType(IDictionary<ErrorType, decimal> errorChances)
     {
-        var randomValue = new Random().NextDouble();
-        var cumulativeChance = 0.0;
+        var randomValue = (decimal)new Random().NextDouble();
+        var cumulativeChance = 0.0m;
 
         foreach (var kvp in errorChances)
         {

@@ -1,12 +1,14 @@
+using Demo.Data.Models;
+using Demo.Data.Repositories;
+using Demo.Jobs.Config;
 using Microsoft.AspNetCore.Mvc;
-using ValidationTracer.Data.Models;
-using ValidationTracer.Data.Repositories;
+using Microsoft.Extensions.Options;
 
 namespace Demo.Job.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class UserController(ILogger<UserController> logger, 
+public class UserController(ILogger<UserController> logger,
                             UserRepository userRepository,
                             IOptions<JobConfig> options)
     : ControllerBase
@@ -14,8 +16,8 @@ public class UserController(ILogger<UserController> logger,
     #region Private Fields
 
     private readonly ILogger<UserController> _logger = logger;
-    private readonly UserRepository _userRepository = userRepository;
     private readonly IOptions<JobConfig> _options = options;
+    private readonly UserRepository _userRepository = userRepository;
 
     #endregion Private Fields
 
