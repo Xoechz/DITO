@@ -15,3 +15,5 @@ My bachelors thesis about capturing data transfer interfaces validation data via
 ## Documentation
 
 [Folder](./doc/)
+
+Alternativ Name für Swietelsky: Swie:Mon für Swietelsky Monitoring
