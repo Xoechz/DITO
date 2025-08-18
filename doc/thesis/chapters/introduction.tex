@@ -1,7 +1,9 @@
 \chapter{Introduction}
+\label{chap:introduction}
 
 \section{Motivation}
-
+\label{sec:i_motivation}
+//TODO fix citation style
 OpenTelemetry has established itself as a groundbreaking new standard in the field of observability~\cite{Young2024, Young2021}.
 It is replacing many vendor-specific solutions with a unified, standardized, extensible, open-source, 
 and language-integrated framework.
@@ -10,6 +12,7 @@ While OpenTelemetry was initially designed with microservices in mind, its appli
 Distributed systems of all kinds, including legacy systems, can benefit significantly from its capabilities~\cite{Gomez_Blanco2023}.
 
 \section{Problem}
+\label{sec:i_problem}
 
 A major challenge in legacy systems, especially those that have evolved organically over time,
 is the absence of a single source of truth~\cite{Flanders2024}.
@@ -33,6 +36,7 @@ or Microsoft Application Insights, the challenge lies in the volume and complexi
 Traces, which are mostly underutilized, offer a more structured and insightful alternative~\cite{Young2021}.
 
 \section{Goals}
+\label{sec:i_goals}
 
 The primary goal of this thesis can be split into two distinct parts:
 (1) to generate detailed traces for individual data points during data transfer jobs, and 
@@ -55,6 +59,7 @@ Since jobs may run independently and at different times,
 the collector must persist telemetry data to enable correlation across time.
 
 \section{Methodology}
+\label{sec:i_methodology}
 
 This thesis will involve the development of a prototype system using two main technologies:
 

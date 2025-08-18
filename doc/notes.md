@@ -80,3 +80,56 @@ OP en
 **T**racing using
 
 **O**pentelemetry
+
+## Kapitel
+
+- Introduction
+  - Motivation
+  - Problem
+  - Goals
+    - Trace Creation
+    - Trace Collection and Regrouping
+  - Methodology
+    - Base System Development
+    - Custom Collector Implementation
+    - Evaluation and Metrics
+- Basics
+  - Monitoring vs Observability
+  - Logs
+  - Metrics
+  - Traces
+  - Distributed Systems
+    - Legacy Systems
+    - Microservices
+    - Observability in Distributed Contexts
+- OpenTelemetry
+  - History and Evolution
+  - Specification
+    - Signals
+      - Traces
+      - Metrics
+      - Logs
+      - Baggage
+    - Context Propagation
+    - Semantic Conventions
+  - Telemetry Backends
+- OpenTelemetry in .NET
+  - Instrumentation
+    - Auto- vs Manual Instrumentation
+  - Trace Generation
+- OpenTelemetry Collector
+  - Architecture and Deployment
+    - No Collector
+    - Agent
+    - Gateway
+  - Configuration
+  - Extending the Collector
+    - Creating a custom Processor
+    - Span Extraction and Regrouping
+    - Metric Generation
+    - Sampling
+    - Error Handling
+- Prototype
+  - Architecture Diagram
+  - Configuration
+  - Example
