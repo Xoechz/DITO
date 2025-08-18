@@ -3,19 +3,19 @@
 
 \section{Motivation}
 \label{sec:i_motivation}
-//TODO fix citation style
-OpenTelemetry has established itself as a groundbreaking new standard in the field of observability~\cite{Young2024, Young2021}.
+
+OpenTelemetry has established itself as a groundbreaking new standard in the field of observability~\citebooks{Young2024/0; , Young2021/0}.
 It is replacing many vendor-specific solutions with a unified, standardized, extensible, open-source, 
 and language-integrated framework.
 
-While OpenTelemetry was initially designed with microservices in mind, its applicability extends far beyond that~\cite{Boten2022}.
-Distributed systems of all kinds, including legacy systems, can benefit significantly from its capabilities~\cite{Gomez_Blanco2023}.
+While OpenTelemetry was initially designed with microservices in mind, its applicability extends far beyond that~\citebook{Boten2022}{0}.
+Distributed systems of all kinds, including legacy systems, can benefit significantly from its capabilities~\citebook{Gomez_Blanco2023}{0}.
 
 \section{Problem}
 \label{sec:i_problem}
 
 A major challenge in legacy systems, especially those that have evolved organically over time,
-is the absence of a single source of truth~\cite{Flanders2024}.
+is the absence of a single source of truth~\citebook{Flanders2024}{0}.
 Data entries, such as employee information, are often stored across multiple, loosely connected subsystems.
 For instance, the data indicating which manager an employee reports to might reside in a
 different subsystem than the one storing team assignments.
@@ -33,7 +33,7 @@ A centralized observability dashboard that aggregates logs, traces, and metrics 
 
 While basic telemetry collection is achievable using zero-code instrumentation and backends like Jaeger, Zipkin, Prometheus,
 or Microsoft Application Insights, the challenge lies in the volume and complexity of the logs.
-Traces, which are mostly underutilized, offer a more structured and insightful alternative~\cite{Young2021}.
+Traces, which are mostly underutilized, offer a more structured and insightful alternative~\citebook{Young2021}{0}.
 
 \section{Goals}
 \label{sec:i_goals}

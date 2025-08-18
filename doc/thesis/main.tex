@@ -26,6 +26,18 @@
 \graphicspath{{images/}}  % Location of images and graphics
 \bibliography{references} % Biblatex bibliography file (references.bib)
 
+\newcommand{\citebook}[2]{%
+  [\citeauthor{#1}, \citeyear{#1}, p.~#2]%
+}
+
+\newcommand{\citebooks}[1]{%
+  [%
+    \foreach \x/\y in {#1} {%
+      \citeauthor{\x}, \citeyear{\x}, p.~\y %
+    }%
+  ]%
+}
+
 %%%-----------------------------------------------------------------------------
 \begin{document}
 %%%-----------------------------------------------------------------------------
