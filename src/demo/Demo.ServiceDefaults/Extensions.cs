@@ -1,4 +1,5 @@
 using Demo.OpenTelemetry.Extensions;
+using Demo.OpenTelemetry.Jobs.Extensions;
 using Demo.ServiceDefaults.Faker;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -29,7 +30,7 @@ public static class Extensions
         builder.AddDefaultHealthChecks();
 
         builder.Services.AddServiceDiscovery();
-        builder.Services.ConfigureOpenTelemetry(builder.Configuration, builder.Environment);
+        builder.Services.ConfigureOpenTelemetryWithHangfire(builder.Configuration, builder.Environment);
 
         builder.Services.ConfigureHttpClientDefaults(http =>
         {

@@ -4,11 +4,6 @@ var sql = builder.AddSqlServer("sql")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume();
 
-var collector = builder.AddContainer("collector", "otel/opentelemetry-collector-contrib")
-    .WithContainerRuntimeArgs("--add-host=host.docker.internal:host-gateway")
-    .WithBindMount("/home/elias/Repos/DITO/src/demo/Demo.AppHost/otel-collector-config.yaml", "/etc/otel-collector-config.yaml")
-    .WithEndpoint(14318, 4318);
-
 var services = Enumerable.Range(0, 3);
 var urls = string.Join(",", services.Select(i => "http://127.0.0.1:" + (5280 + i)));
 
@@ -20,7 +15,7 @@ foreach (var serviceIndex in services)
     var migration = builder.AddProject<Projects.Demo_MigrationService>("Migration-" + serviceIndex)
         .WithEnvironment("SERVICE_NAME", "Migration-" + serviceIndex)
         .WithEnvironment("SERVICE_INDEX", serviceIndex.ToString())
-        .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:14318")
+        .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
         .WithReference(demoDb)
         .WaitFor(demoDb);
 
@@ -29,7 +24,7 @@ foreach (var serviceIndex in services)
         .WithEnvironment("SERVICE_INDEX", serviceIndex.ToString())
         .WithEnvironment("TARGET_URLS", urls)
         .WithEnvironment("CRON_EXPRESSION", "*/" + (serviceIndex + 1) + " * * * *")
-        .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:14318")
+        .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
         .WithHttpEndpoint(5280 + serviceIndex)
         .WithHttpsEndpoint(7160 + serviceIndex)
         .WithReference(demoDb)

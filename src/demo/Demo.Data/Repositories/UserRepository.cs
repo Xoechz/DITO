@@ -1,15 +1,17 @@
-﻿using Demo.Data.Models;
+﻿using System.Diagnostics;
+using Demo.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Demo.Data.Repositories;
 
-public class UserRepository(DemoContext demoContext, ILogger<UserRepository> logger)
+public class UserRepository(DemoContext demoContext, ILogger<UserRepository> logger, ActivitySource activitySource)
 {
     #region Private Fields
 
     private readonly DemoContext _context = demoContext;
     private readonly ILogger<UserRepository> _logger = logger;
+    private readonly ActivitySource _activitySource = activitySource;
 
     #endregion Private Fields
 
@@ -67,11 +69,18 @@ public class UserRepository(DemoContext demoContext, ILogger<UserRepository> log
     }
 
     public async Task<IEnumerable<User>> GetUsersAsync(IDictionary<ErrorType, decimal>? errorChances = null)
-         => await _context.Users.Select(entity => new User
-         {
-             EmailAddress = entity.EmailAddress,
-             Error = errorChances != null ? GetRandomErrorType(errorChances) : ErrorType.None
-         }).ToListAsync();
+    {
+        using var activity = _activitySource.StartActivity("GetUsers");
+
+        var list = await _context.Users.Select(entity => new User
+        {
+            EmailAddress = entity.EmailAddress,
+            Error = errorChances != null ? GetRandomErrorType(errorChances) : ErrorType.None
+        }).ToListAsync();
+
+        activity?.SetTag("user.count", list.Count);
+        return list;
+    }
 
     #endregion Public Methods
 

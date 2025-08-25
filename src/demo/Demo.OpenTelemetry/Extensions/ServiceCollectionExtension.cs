@@ -40,8 +40,6 @@ public static class ServiceCollectionExtension
             {
                 tracing.AddAspNetCoreInstrumentation()
                     .AddEntityFrameworkCoreInstrumentation()
-                    // Disable SQL client instrumentation by default, as we use EF Core.
-                    .AddSqlClientInstrumentation(opt => opt.Filter = _ => false)
                     .AddHttpClientInstrumentation();
             });
 
@@ -134,7 +132,6 @@ public static class ServiceCollectionExtension
                     // Node: The SqlClientInstrumentation is not included, because we do not really use raw SQL commands, but hangfire uses them fairly often, which is not relevant.
                     // Also the EntityFramework Traces would be duplicated.
                     // The DB statements are captured to see which SQL commands are executed.
-                    .AddSqlClientInstrumentation(opt => opt.Filter = _ => false)
                     .AddEntityFrameworkCoreInstrumentation(o => o.SetDbStatementForText = true)
                     // HttpClientInstrumentation adds tracing for outgoing HTTP requests made by the application.
                     .AddHttpClientInstrumentation();

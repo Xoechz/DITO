@@ -8,6 +8,7 @@ toolchain go1.24.4
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.131.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.131.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.131.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.131.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.131.0
@@ -28,6 +29,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.131.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.131.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.131.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.131.0
 	go.opentelemetry.io/collector/extension v1.37.0
 	go.opentelemetry.io/collector/otelcol v0.131.0
 	go.opentelemetry.io/collector/processor v1.37.0
@@ -265,6 +267,7 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.32.3 // indirect

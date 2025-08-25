@@ -14,14 +14,15 @@
         {
             "name": "Run Demo AppHost",
             "type": "f5anything",
-            "command": "dotnet run --project ${workspaceFolder}/src/demo/Demo.AppHost/Demo.AppHost.csproj",
+            "command": "dotnet run --project ${workspaceFolder}/src/demo/Demo.AppHost/Demo.AppHost.csproj -lp http",
             "request": "launch"
         },
         {
             "name": "Debug Demo AppHost",
             "type": "dotnet",
             "request": "launch",
-            "projectPath": "${workspaceFolder}/src/demo/Demo.AppHost/Demo.AppHost.csproj"
+            "projectPath": "${workspaceFolder}/src/demo/Demo.AppHost/Demo.AppHost.csproj",
+            "launchConfigurationId": "http"
         }
     ]
 }
