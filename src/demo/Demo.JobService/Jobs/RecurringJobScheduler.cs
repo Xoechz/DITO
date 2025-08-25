@@ -31,7 +31,7 @@ public class RecurringJobScheduler(ILogger<RecurringJobScheduler> logger,
 
     #region Private Methods
 
-    private Hangfire.Common.Job GetHangfireJob(JobWorker recurringJob)
+    private static Hangfire.Common.Job GetHangfireJob(JobWorker recurringJob)
     {
         var jobType = recurringJob.GetType();
         var jobMethod = jobType.GetMethod(nameof(JobWorker.DoWork));

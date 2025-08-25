@@ -16,4 +16,4 @@ var connectionString = builder.Configuration.GetConnectionString("DB-" + service
 builder.Services.AddDbContext<DemoContext>(options => options.UseSqlServer(connectionString));
 
 var host = builder.Build();
-host.Run();
+await host.RunAsync();

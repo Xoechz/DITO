@@ -8,7 +8,12 @@ public class EmailFaker : Faker<string>
 
     public EmailFaker()
     {
-        UseSeed(1)
+        ConfigureEmailFaker(1);
+    }
+
+    private void ConfigureEmailFaker(int seed)
+    {
+        UseSeed(seed)
             .CustomInstantiator(f => f.Internet.Email());
     }
 

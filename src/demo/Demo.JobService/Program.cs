@@ -56,4 +56,4 @@ app.MapHangfireDashboard();
 var scheduler = app.Services.GetRequiredService<RecurringJobScheduler>();
 scheduler.ScheduleRecurringJobs();
 
-app.Run();
+await app.RunAsync();

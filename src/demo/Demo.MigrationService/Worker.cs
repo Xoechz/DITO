@@ -24,7 +24,7 @@ public class Worker(IServiceProvider serviceProvider,
 
     #region Protected Methods
 
-    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var activity = _activitySource.StartActivity("Migrating database", ActivityKind.Internal);
 
