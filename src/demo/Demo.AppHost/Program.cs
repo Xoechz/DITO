@@ -31,4 +31,4 @@ foreach (var serviceIndex in services)
         .WaitForCompletion(migration);
 }
 
-builder.Build().Run();
+await builder.Build().RunAsync();
