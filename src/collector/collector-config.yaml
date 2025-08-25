@@ -36,7 +36,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch, filter]
-      exporters: [debug,otlp,file,azuremonitor]
+      exporters: [debug, otlp, file, azuremonitor]
     metrics:
       receivers: [otlp]
       processors: [batch]

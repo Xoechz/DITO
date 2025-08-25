@@ -5,6 +5,7 @@ using Demo.JobService.Config;
 using Demo.JobService.Jobs;
 using Demo.ServiceDefaults;
 using Hangfire;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +17,7 @@ var serviceIndex = builder.Configuration["SERVICE_INDEX"]
 var connectionString = builder.Configuration.GetConnectionString("DB-" + serviceIndex)
     ?? throw new InvalidOperationException("Connection String DB-" + serviceIndex + " is not configured.");
 
-builder.AddSqlServerDbContext<DemoContext>("DB-" + serviceIndex);
+builder.Services.AddDbContext<DemoContext>(options => options.UseSqlServer(connectionString));
 
 builder.Services.AddHangfireServer()
     .AddSingleton<RecurringJobScheduler>()
