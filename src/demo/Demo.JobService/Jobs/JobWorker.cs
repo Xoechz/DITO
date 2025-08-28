@@ -1,13 +1,15 @@
 ﻿using Demo.Data.Models;
 using Demo.Data.Repositories;
 using Demo.JobService.Config;
+using Demo.ServiceDefaults.Faker;
 using System.Diagnostics;
 
 namespace Demo.JobService.Jobs;
 
 public class JobWorker(ActivitySource activitySource,
                        UserRepository userRepository,
-                       JobConfig config)
+                       JobConfig config,
+                       EmailFaker emailFaker)
 {
     #region Private Fields
 
@@ -43,11 +45,22 @@ public class JobWorker(ActivitySource activitySource,
             ?? throw new InvalidOperationException("Failed to retrieve users from external API");
 
         activity?.SetTag("UserCount", users.Count());
+        await _userRepository.AddUsersAsync(users);
 
-        foreach (var user in users)
+        var firstEmail = users.First().EmailAddress;
+        activity?.SetTag("DeletedUser", firstEmail);
+
+        await httpClient.DeleteAsync($"User/{firstEmail}", cancellationToken);
+
+        var randomEmail = emailFaker.Generate(1)[0];
+        activity?.SetTag("AddedUser", randomEmail);
+
+        var usersToAdd = new List<User>
         {
-            await _userRepository.AddUserAsync(user);
-        }
+            new() { EmailAddress = randomEmail }
+        };
+
+        await httpClient.PostAsJsonAsync("User", usersToAdd, cancellationToken);
     }
 
     #endregion Public Methods

@@ -1,4 +1,3 @@
-using Demo.OpenTelemetry.Extensions;
 using Demo.OpenTelemetry.Jobs.Extensions;
 using Demo.ServiceDefaults.Faker;
 using Microsoft.AspNetCore.Builder;

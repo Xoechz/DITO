@@ -18,6 +18,22 @@ public static class ServiceCollectionExtension
 {
     #region Public Methods
 
+    public static IServiceCollection ConfigureApplicationInsights(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Check if the Azure Monitor is configured via environment variables.
+        var useAzureMonitor = !string.IsNullOrWhiteSpace(configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]);
+
+        if (useAzureMonitor)
+        {
+            services.AddApplicationInsightsTelemetry(options =>
+            {
+                options.ConnectionString = configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+            });
+        }
+
+        return services;
+    }
+
     /// <summary>
     /// Configures basic OpenTelemetry.
     /// </summary>

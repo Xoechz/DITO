@@ -22,11 +22,21 @@ public class UserController(ILogger<UserController> logger,
 
     #region Public Methods
 
-    [HttpDelete]
-    public async Task Delete(string emailAddress)
+    [HttpDelete("{emailAddress}")]
+    public async Task<IActionResult> Delete(string emailAddress)
     {
         _logger.LogInformation("Deleting user");
-        await _userRepository.DeleteUserAsync(emailAddress);
+
+        try
+        {
+            await _userRepository.DeleteUserAsync(emailAddress);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+
+        return Ok();
     }
 
     [HttpGet]
@@ -37,10 +47,10 @@ public class UserController(ILogger<UserController> logger,
     }
 
     [HttpPost]
-    public async Task Post(User user)
+    public async Task Post(IEnumerable<User> users)
     {
-        _logger.LogInformation("Adding user");
-        await _userRepository.AddUserAsync(user);
+        _logger.LogInformation("Adding users");
+        await _userRepository.AddUsersAsync(users);
     }
 
     #endregion Public Methods

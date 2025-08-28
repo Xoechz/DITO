@@ -33,9 +33,9 @@ public class Worker(IServiceProvider serviceProvider,
             using var scope = _serviceProvider.CreateScope();
             var demoContext = scope.ServiceProvider.GetRequiredService<DemoContext>();
 
-            await EnsureDatabaseAsync(demoContext, cancellationToken);
-            await RunMigrationAsync(demoContext, cancellationToken);
-            await SeedDataAsync(demoContext, cancellationToken);
+            await EnsureDatabaseAsync(demoContext, stoppingToken);
+            await RunMigrationAsync(demoContext, stoppingToken);
+            await SeedDataAsync(demoContext, stoppingToken);
         }
         catch (Exception ex)
         {

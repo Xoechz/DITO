@@ -1,7 +1,8 @@
-﻿using System.Diagnostics;
-using Demo.Data.Models;
+﻿using Demo.Data.Models;
+using Demo.Data.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace Demo.Data.Repositories;
 
@@ -17,38 +18,44 @@ public class UserRepository(DemoContext demoContext, ILogger<UserRepository> log
 
     #region Public Methods
 
-    public async Task<bool> AddUserAsync(User user)
+    public async Task<bool> AddUsersAsync(IEnumerable<User> users)
     {
-        if (user.Error == ErrorType.Validation)
+        var existingEmails = await _context.Users
+            .Select(u => u.EmailAddress)
+            .ToHashSetAsync();
+
+        foreach (var user in users)
         {
-            _logger.LogError("Validation error for user with email {EmailAddress}", user.EmailAddress);
-            return false;
+            if (user.Error == ErrorType.Validation)
+            {
+                _logger.LogError("Validation error for user with email {EmailAddress}", user.EmailAddress);
+                return false;
+            }
+            else if (user.Error == ErrorType.Critical)
+            {
+                throw new InvalidOperationException("Critical error occurred while adding user");
+            }
+
+            if (string.IsNullOrWhiteSpace(user.EmailAddress))
+            {
+                _logger.LogError("Email address is required");
+                throw new InvalidOperationException("Email address cannot be null or empty");
+            }
+
+            if (existingEmails.Contains(user.EmailAddress))
+            {
+                _logger.LogWarning("User with email {EmailAddress} already exists", user.EmailAddress);
+                return false;
+            }
+
+            var entity = new Entities.User
+            {
+                EmailAddress = user.EmailAddress
+            };
+
+            _context.Users.Add(entity);
         }
-        else if (user.Error == ErrorType.Critical)
-        {
-            throw new InvalidOperationException("Critical error occurred while adding user");
-        }
 
-        if (string.IsNullOrWhiteSpace(user.EmailAddress))
-        {
-            _logger.LogError("Email address is required");
-            throw new InvalidOperationException("Email address cannot be null or empty");
-        }
-
-        var userExists = await _context.Users.AnyAsync(u => u.EmailAddress == user.EmailAddress);
-
-        if (userExists)
-        {
-            _logger.LogWarning("User with email {EmailAddress} already exists", user.EmailAddress);
-            return false;
-        }
-
-        var entity = new Entities.User
-        {
-            EmailAddress = user.EmailAddress
-        };
-
-        _context.Users.Add(entity);
         await _context.SaveChangesAsync();
         return true;
     }
@@ -75,7 +82,7 @@ public class UserRepository(DemoContext demoContext, ILogger<UserRepository> log
         var list = await _context.Users.Select(entity => new User
         {
             EmailAddress = entity.EmailAddress,
-            Error = errorChances != null ? GetRandomErrorType(errorChances) : ErrorType.None
+            Error = errorChances != null ? Utlis.GetRandomErrorType(errorChances) : ErrorType.None
         }).ToListAsync();
 
         activity?.SetTag("user.count", list.Count);
@@ -83,25 +90,4 @@ public class UserRepository(DemoContext demoContext, ILogger<UserRepository> log
     }
 
     #endregion Public Methods
-
-    #region Private Methods
-
-    private static ErrorType GetRandomErrorType(IDictionary<ErrorType, decimal> errorChances)
-    {
-        var randomValue = (decimal)new Random().NextDouble();
-        var cumulativeChance = 0.0m;
-
-        foreach (var kvp in errorChances)
-        {
-            cumulativeChance += kvp.Value;
-            if (randomValue < cumulativeChance)
-            {
-                return kvp.Key;
-            }
-        }
-
-        return ErrorType.None; // Default case if no error type matches
-    }
-
-    #endregion Private Methods
 }
