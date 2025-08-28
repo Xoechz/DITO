@@ -4,6 +4,8 @@ namespace Demo.Data.Utilities;
 
 public static class Utlis
 {
+    #region Public Methods
+
     public static ErrorType GetRandomErrorType(IDictionary<ErrorType, decimal> errorChances)
     {
         var randomValue = (decimal)new Random().NextDouble();
@@ -20,4 +22,6 @@ public static class Utlis
 
         return ErrorType.None; // Default case if no error type matches
     }
+
+    #endregion Public Methods
 }

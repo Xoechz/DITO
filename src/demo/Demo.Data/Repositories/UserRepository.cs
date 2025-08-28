@@ -10,9 +10,9 @@ public class UserRepository(DemoContext demoContext, ILogger<UserRepository> log
 {
     #region Private Fields
 
+    private readonly ActivitySource _activitySource = activitySource;
     private readonly DemoContext _context = demoContext;
     private readonly ILogger<UserRepository> _logger = logger;
-    private readonly ActivitySource _activitySource = activitySource;
 
     #endregion Private Fields
 

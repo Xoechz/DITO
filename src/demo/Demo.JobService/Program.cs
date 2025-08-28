@@ -11,6 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+#pragma warning disable S125 // Sections of code should not be commented out
+//builder.Services.ConfigureApplicationInsights(builder.Configuration, builder.Environment);
+#pragma warning restore S125 // Sections of code should not be commented out
+
 var serviceIndex = builder.Configuration["SERVICE_INDEX"]
     ?? throw new InvalidOperationException();
 

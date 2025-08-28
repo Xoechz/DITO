@@ -18,8 +18,11 @@ public static class ServiceCollectionExtension
 {
     #region Public Methods
 
-    public static IServiceCollection ConfigureApplicationInsights(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection ConfigureApplicationInsights(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
+        var serviceName = configuration["SERVICE_NAME"] ?? environment.ApplicationName;
+        SetupActivitySource(services, serviceName);
+
         // Check if the Azure Monitor is configured via environment variables.
         var useAzureMonitor = !string.IsNullOrWhiteSpace(configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]);
 
@@ -40,8 +43,11 @@ public static class ServiceCollectionExtension
     /// <param name="services"><see cref="IServiceCollection"/></param>
     /// <param name="configuration"><see cref="IConfiguration"/></param>
     /// <returns><see cref="IServiceCollection"/> for method chaining</returns>
-    public static IServiceCollection ConfigureBasicOpenTelemetry(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection ConfigureBasicOpenTelemetry(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
+        var serviceName = configuration["SERVICE_NAME"] ?? environment.ApplicationName;
+        SetupActivitySource(services, serviceName);
+
         var otelBuilder = services.AddOpenTelemetry()
             .WithLogging()
             .WithMetrics(metrics =>
@@ -103,12 +109,7 @@ public static class ServiceCollectionExtension
     {
         var serviceName = configuration["SERVICE_NAME"] ?? environment.ApplicationName;
 
-        // for manual trace instrumentation
-        // to use it, inject the ActivitySource into you class and then create an Activity like this:
-        // using (var activity = activitySource.StartActivity("MyOperation"))
-        // Do not forget the using statement or dispose the activity manually to end the trace.
-        activitySource = new ActivitySource(serviceName);
-        services.AddSingleton(activitySource);
+        activitySource = SetupActivitySource(services, serviceName);
 
         // OpenTelemetry configuration
         var otelBuilder = services.AddOpenTelemetry()
@@ -176,4 +177,19 @@ public static class ServiceCollectionExtension
     }
 
     #endregion Public Methods
+
+    #region Private Methods
+
+    private static ActivitySource SetupActivitySource(this IServiceCollection services, string serviceName)
+    {
+        // for manual trace instrumentation
+        // to use it, inject the ActivitySource into you class and then create an Activity like this:
+        // using (var activity = activitySource.StartActivity("MyOperation"))
+        // Do not forget the using statement or dispose the activity manually to end the trace.
+        var activitySource = new ActivitySource(serviceName);
+        services.AddSingleton(activitySource);
+        return activitySource;
+    }
+
+    #endregion Private Methods
 }

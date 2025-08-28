@@ -29,7 +29,11 @@ public static class Extensions
         builder.AddDefaultHealthChecks();
 
         builder.Services.AddServiceDiscovery();
+
+#pragma warning disable S125 // Sections of code should not be commented out
+        //builder.Services.ConfigureBasicOpenTelemetry(builder.Configuration, builder.Environment);
         builder.Services.ConfigureOpenTelemetryWithHangfire(builder.Configuration, builder.Environment);
+#pragma warning restore S125 // Sections of code should not be commented out
 
         builder.Services.ConfigureHttpClientDefaults(http =>
         {

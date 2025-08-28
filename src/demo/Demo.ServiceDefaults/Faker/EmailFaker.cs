@@ -11,11 +11,15 @@ public class EmailFaker : Faker<string>
         ConfigureEmailFaker(1);
     }
 
+    #endregion Public Constructors
+
+    #region Private Methods
+
     private void ConfigureEmailFaker(int seed)
     {
         UseSeed(seed)
             .CustomInstantiator(f => f.Internet.Email());
     }
 
-    #endregion Public Constructors
+    #endregion Private Methods
 }
