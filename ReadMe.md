@@ -1,4 +1,4 @@
-# DITO
+# DITO - Work in Progress
 
 ![DITO](./logo.svg)
 
