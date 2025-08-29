@@ -1,5 +1,5 @@
 {
-  description = "DITO NixShell";
+  description = "GO NixShell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,20 +12,13 @@
       in
       {
         default = pkgs.mkShell {
-          name = "DITO";
+          name = "GO";
           nativeBuildInputs = with pkgs; [
-            dotnetCorePackages.sdk_9_0
-            dotnetCorePackages.runtime_9_0
-            dotnetCorePackages.aspnetcore_9_0
-
             go
             gopls
             delve
             golangci-lint
           ];
-
-          DOTNET_BIN = "${pkgs.dotnetCorePackages.sdk_9_0}/bin/dotnet";
-          DOTNET_ROOT = "${pkgs.dotnetCorePackages.sdk_9_0}/share/dotnet";
         };
       };
   };

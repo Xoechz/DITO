@@ -1,6 +1,6 @@
 # DITO
 
-![DITO](./doc/logo.svg)
+![DITO](./logo.svg)
 
 **D** ata and
 
@@ -11,9 +11,3 @@
 **O** penTelemetry
 
 My bachelors thesis about capturing data transfer interfaces validation data via OpenTelemetry.
-
-## Documentation
-
-[Folder](./doc/)
-
-Alternativ Name für Swietelsky: Swie:Mon für Swietelsky Monitoring
