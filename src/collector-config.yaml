@@ -5,43 +5,54 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+
 processors:
-  batch:
-# filter out
-# ScopeSpans SchemaURL: 
-# InstrumentationScope OpenTelemetry.Instrumentation.SqlClient 1.7.0.1173
-  filter:
-    error_mode: ignore
-    traces:
-      span:
-        - 'scope.name == "OpenTelemetry.Instrumentation.SqlClient"'
+  batch: 
+    timeout: 1s
+  memory_limiter:
+    limit_mib: 4096
+    check_interval: 5s
+    spike_limit_mib: 512
+  resourcedetection:
+    detectors: ["system"]
+  groupbytrace:
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
 
 exporters:
-  debug:
-    verbosity: detailed
-  file:
-    path: ./logs/otelcol.json
-    append: false
   otlp:
-    endpoint: http://localhost:19218
+    endpoint: 0.0.0.0:14317
     tls:
       insecure: true
-    headers:
-      x-otlp-api-key: 67ece10f8749566cbf983b1c346ee640
-  azuremonitor:
-    connection_string: "InstrumentationKey=61b2b33b-ed9b-4519-9e49-3830f5976c32;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=d30bd882-7ff0-4006-b400-4bd8c93797a1"
+  file/default:
+    path: ./logs/default.json
+    append: false
+  file/dito:
+    path: ./logs/dito.json
+    append: false
+
+connectors:
+  dito:
+    non_error_sampling_fraction: 2
 
 service:
+  extensions: [health_check, pprof, zpages]
   pipelines:
-    traces:
+    traces/default:
       receivers: [otlp]
-      processors: [batch, filter]
-      exporters: [debug, otlp, file, azuremonitor]
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp, azuremonitor]
-    logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp, azuremonitor]
+      processors: [memory_limiter, resourcedetection, batch, groupbytrace]
+      exporters: [file/default, dito, otlp]
+    traces/dito:
+      receivers: [dito]
+      processors: [memory_limiter, batch]
+      exporters: [file/dito, otlp]
+    metrics/dito:
+      receivers: [dito]
+      processors: [memory_limiter, batch]
+      exporters: [file/dito, otlp]
