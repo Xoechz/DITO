@@ -5,12 +5,21 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  hostmetrics:
+    collection_interval: 60s
+    scrapers:
+      cpu:
+      load:
+      memory:
+      disk:
+      filesystem:
+      network:
 
 processors:
   batch: 
     timeout: 1s
   memory_limiter:
-    limit_mib: 4096
+    limit_mib: 8192
     check_interval: 5s
     spike_limit_mib: 512
   resourcedetection:
@@ -30,16 +39,9 @@ exporters:
     endpoint: 0.0.0.0:14317
     tls:
       insecure: true
-  file/default:
-    path: ./logs/default.json
-    append: false
-  file/dito:
-    path: ./logs/dito.json
-    append: false
 
 connectors:
   dito:
-    non_error_sampling_fraction: 2
 
 service:
   extensions: [health_check, pprof, zpages]
@@ -47,12 +49,20 @@ service:
     traces/default:
       receivers: [otlp]
       processors: [memory_limiter, resourcedetection, batch, groupbytrace]
-      exporters: [file/default, dito, otlp]
+      exporters: [dito, otlp]
     traces/dito:
       receivers: [dito]
       processors: [memory_limiter, batch]
-      exporters: [file/dito, otlp]
+      exporters: [otlp]
     metrics/dito:
       receivers: [dito]
       processors: [memory_limiter, batch]
-      exporters: [file/dito, otlp]
+      exporters: [otlp]
+    metrics/default:
+      receivers: [otlp, hostmetrics]
+      processors: [memory_limiter, batch]
+      exporters: [otlp]
+    logs/default:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp]
