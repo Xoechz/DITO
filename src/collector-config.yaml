@@ -21,10 +21,12 @@ processors:
   memory_limiter:
     limit_mib: 8192
     check_interval: 5s
-    spike_limit_mib: 512
+    spike_limit_mib: 1024
   resourcedetection:
     detectors: ["system"]
   groupbytrace:
+    wait_duration: 5s
+    num_traces: 5000
 
 extensions:
   health_check:
@@ -48,7 +50,7 @@ service:
   pipelines:
     traces/default:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, batch, groupbytrace]
+      processors: [memory_limiter, resourcedetection, groupbytrace, batch]
       exporters: [dito, otlp]
     traces/dito:
       receivers: [dito]
