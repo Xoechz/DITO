@@ -1,0 +1,57 @@
+package swie_mon
+
+import (
+	"context"
+	"time"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/consumer"
+)
+
+var (
+	typeStr = component.MustNewType("swie_mon")
+)
+
+const (
+	defaultEntityKey                = "swie_mon.key"
+	defaultJobKey                   = "swie_mon.job_id"
+	defaultMaxCacheDuration         = time.Hour
+	defaultNonErrorSamplingFraction = 1
+)
+
+func createDefaultConfig() component.Config {
+	return &Config{
+		EntityKey:                defaultEntityKey,
+		JobKey:                   defaultJobKey,
+		MaxCacheDuration:         defaultMaxCacheDuration,
+		NonErrorSamplingFraction: defaultNonErrorSamplingFraction,
+	}
+}
+
+func createTracesToTracesConnector(
+	ctx context.Context,
+	params connector.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Traces,
+) (connector.Traces, error) {
+	return newTracesConnector(params.Logger, cfg, nextConsumer)
+}
+
+func createTracesToMetricsConnector(
+	ctx context.Context,
+	params connector.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (connector.Traces, error) {
+	return newMetricsConnector(params.Logger, cfg, nextConsumer)
+}
+
+func NewFactory() connector.Factory {
+	return connector.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		connector.WithTracesToTraces(createTracesToTracesConnector, component.StabilityLevelAlpha),
+		connector.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelAlpha),
+	)
+}
