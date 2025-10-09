@@ -2,6 +2,7 @@ package dito
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
@@ -15,7 +16,7 @@ var (
 const (
 	defaultEntityKey                = "dito.key"
 	defaultJobKey                   = "dito.job_id"
-	defaultMaxCachedEntities        = 10000
+	defaultMaxCacheDuration         = time.Hour
 	defaultNonErrorSamplingFraction = 1
 )
 
@@ -23,7 +24,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		EntityKey:                defaultEntityKey,
 		JobKey:                   defaultJobKey,
-		MaxCachedEntities:        defaultMaxCachedEntities,
+		MaxCacheDuration:         defaultMaxCacheDuration,
 		NonErrorSamplingFraction: defaultNonErrorSamplingFraction,
 	}
 }

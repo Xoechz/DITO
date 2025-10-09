@@ -2,13 +2,14 @@ package dito
 
 import (
 	"fmt"
+	"time"
 )
 
 type Config struct {
-	EntityKey                string `mapstructure:"entity_key"`
-	JobKey                   string `mapstructure:"job_key"`
-	MaxCachedEntities        int    `mapstructure:"max_cached_entities"`
-	NonErrorSamplingFraction int    `mapstructure:"non_error_sampling_fraction"`
+	EntityKey                string        `mapstructure:"entity_key"`
+	JobKey                   string        `mapstructure:"job_key"`
+	MaxCacheDuration         time.Duration `mapstructure:"max_cache_duration"`
+	NonErrorSamplingFraction int           `mapstructure:"non_error_sampling_fraction"`
 }
 
 func (cfg *Config) Validate() error {
@@ -20,8 +21,8 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("job_key must be set")
 	}
 
-	if cfg.MaxCachedEntities <= 0 {
-		return fmt.Errorf("max_cached_entities must be positive")
+	if cfg.MaxCacheDuration <= 0 {
+		return fmt.Errorf("max_cache_duration must be positive")
 	}
 
 	if cfg.NonErrorSamplingFraction < 1 {

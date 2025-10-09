@@ -3,6 +3,7 @@ package dito
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,10 +21,10 @@ func TestTracesConnector(t *testing.T) {
 	tracesConsumer := &consumertest.TracesSink{}
 
 	cfg := &Config{
-		MaxCachedEntities:        0,
 		EntityKey:                ENTITY_KEY_VALUE,
 		JobKey:                   JOB_KEY_VALUE,
 		NonErrorSamplingFraction: 1,
+		MaxCacheDuration:         time.Hour,
 	}
 
 	connector, err := newTracesConnector(zap.NewNop(), cfg, tracesConsumer)
@@ -34,12 +35,14 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("no entity spans", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
+		connector.cache = make(map[string]*ditoCacheEntry)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
 		inputScopeSpan := inputResourceSpan.ScopeSpans().AppendEmpty()
 		inputSpan := inputScopeSpan.Spans().AppendEmpty()
 
+		inputSpan.SetSpanID(generateSpanID())
 		inputSpan.Attributes().PutInt("other", 1)
 
 		// act
@@ -52,59 +55,10 @@ func TestTracesConnector(t *testing.T) {
 		assert.Equal(t, 0, len(outputTraces))
 	})
 
-	t.Run("one entity span", func(t *testing.T) {
-		// arrange
-		tracesConsumer.Reset()
-
-		traces := ptrace.NewTraces()
-		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
-		inputScopeSpan := inputResourceSpan.ScopeSpans().AppendEmpty()
-		inputSpan := inputScopeSpan.Spans().AppendEmpty()
-
-		inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
-		inputSpan.Attributes().PutStr("test.key", "test.value")
-
-		// act
-		err := connector.ConsumeTraces(ctx, traces)
-
-		// assert
-		require.NoError(t, err)
-
-		outputTraces := tracesConsumer.AllTraces()
-		assert.Equal(t, 1, len(outputTraces))
-
-		outputResourceSpans := outputTraces[0].ResourceSpans()
-		assert.Equal(t, 1, outputResourceSpans.Len())
-
-		outputScopeSpans := outputResourceSpans.At(0).ScopeSpans()
-		assert.Equal(t, 1, outputScopeSpans.Len())
-
-		outputSpans := outputScopeSpans.At(0).Spans()
-		assert.Equal(t, 2, outputSpans.Len()) // root span + entity span
-
-		spanTrees := buildSpanTrees(&outputSpans)
-		assert.NotNil(t, spanTrees)
-		assert.Len(t, spanTrees, 1)
-		assert.Len(t, spanTrees[0].children, 1)
-
-		rootSpan := spanTrees[0].span
-		entitySpan := spanTrees[0].children[0].span
-
-		assert.NotEqual(t, rootSpan.SpanID(), entitySpan.SpanID())
-		assert.True(t, rootSpan.ParentSpanID().IsEmpty())
-		assert.Equal(t, rootSpan.SpanID(), entitySpan.ParentSpanID())
-
-		actualKey, actualKeyExists := entitySpan.Attributes().Get(ENTITY_KEY_VALUE)
-		actualTest, actualTestExists := entitySpan.Attributes().Get("test.key")
-		assert.True(t, actualKeyExists)
-		assert.True(t, actualTestExists)
-		assert.Equal(t, "1", actualKey.AsString())
-		assert.Equal(t, "test.value", actualTest.AsString())
-	})
-
 	t.Run("one entity span one job span", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
+		connector.cache = make(map[string]*ditoCacheEntry)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -116,6 +70,7 @@ func TestTracesConnector(t *testing.T) {
 		inputJobSpan.SetSpanID(jobSpanId)
 		inputJobSpan.Attributes().PutInt(JOB_KEY_VALUE, 1)
 
+		inputSpan.SetSpanID(generateSpanID())
 		inputSpan.SetParentSpanID(jobSpanId)
 		inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		inputSpan.Attributes().PutStr("test.key", "test.value")
@@ -167,6 +122,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("two same entity spans one job span", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
+		connector.cache = make(map[string]*ditoCacheEntry)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -179,10 +135,12 @@ func TestTracesConnector(t *testing.T) {
 		inputJobSpan.SetSpanID(jobSpanId)
 		inputJobSpan.Attributes().PutInt(JOB_KEY_VALUE, 1)
 
+		inputSpan1.SetSpanID(generateSpanID())
 		inputSpan1.SetParentSpanID(jobSpanId)
 		inputSpan1.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		inputSpan1.Attributes().PutStr("test.key", "test.value")
 
+		inputSpan2.SetSpanID(generateSpanID())
 		inputSpan2.SetParentSpanID(jobSpanId)
 		inputSpan2.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		inputSpan2.Attributes().PutStr("test.key", "test.value")
@@ -242,6 +200,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("two different entity spans one job span", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
+		connector.cache = make(map[string]*ditoCacheEntry)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -254,10 +213,12 @@ func TestTracesConnector(t *testing.T) {
 		inputJobSpan.SetSpanID(jobSpanId)
 		inputJobSpan.Attributes().PutInt(JOB_KEY_VALUE, 1)
 
+		inputSpan1.SetSpanID(generateSpanID())
 		inputSpan1.SetParentSpanID(jobSpanId)
 		inputSpan1.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		inputSpan1.Attributes().PutStr("test.key", "test.value")
 
+		inputSpan2.SetSpanID(generateSpanID())
 		inputSpan2.SetParentSpanID(jobSpanId)
 		inputSpan2.Attributes().PutInt(ENTITY_KEY_VALUE, 2)
 		inputSpan2.Attributes().PutStr("test.key", "test.value")
@@ -309,6 +270,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("two same entity spans two job spans", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
+		connector.cache = make(map[string]*ditoCacheEntry)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -326,10 +288,12 @@ func TestTracesConnector(t *testing.T) {
 		inputJobSpan2.SetSpanID(jobSpanId2)
 		inputJobSpan2.Attributes().PutInt(JOB_KEY_VALUE, 2)
 
+		inputSpan1.SetSpanID(generateSpanID())
 		inputSpan1.SetParentSpanID(jobSpanId1)
 		inputSpan1.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		inputSpan1.Attributes().PutStr("test.key", "test.value")
 
+		inputSpan2.SetSpanID(generateSpanID())
 		inputSpan2.SetParentSpanID(jobSpanId2)
 		inputSpan2.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		inputSpan2.Attributes().PutStr("test.key", "test.value")
@@ -379,6 +343,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("two different entity spans two job spans", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
+		connector.cache = make(map[string]*ditoCacheEntry)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -396,10 +361,12 @@ func TestTracesConnector(t *testing.T) {
 		inputJobSpan2.SetSpanID(jobSpanId2)
 		inputJobSpan2.Attributes().PutInt(JOB_KEY_VALUE, 2)
 
+		inputSpan1.SetSpanID(generateSpanID())
 		inputSpan1.SetParentSpanID(jobSpanId1)
 		inputSpan1.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		inputSpan1.Attributes().PutStr("test.key", "test.value")
 
+		inputSpan2.SetSpanID(generateSpanID())
 		inputSpan2.SetParentSpanID(jobSpanId2)
 		inputSpan2.Attributes().PutInt(ENTITY_KEY_VALUE, 2)
 		inputSpan2.Attributes().PutStr("test.key", "test.value")
@@ -446,6 +413,75 @@ func TestTracesConnector(t *testing.T) {
 		assert.Equal(t, "test.value", actualTest1.AsString())
 		assert.Equal(t, "test.value", actualTest2.AsString())
 	})
+
+	t.Run("one entity span one job span split", func(t *testing.T) {
+		// arrange
+		tracesConsumer.Reset()
+		connector.cache = make(map[string]*ditoCacheEntry)
+
+		traces1 := ptrace.NewTraces()
+		inputResourceSpan1 := traces1.ResourceSpans().AppendEmpty()
+		inputScopeSpan1 := inputResourceSpan1.ScopeSpans().AppendEmpty()
+		inputSpan := inputScopeSpan1.Spans().AppendEmpty()
+
+		jobSpanId := generateSpanID()
+		inputSpan.SetSpanID(jobSpanId)
+		inputSpan.SetParentSpanID(jobSpanId)
+		inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
+		inputSpan.Attributes().PutStr("test.key", "test.value")
+
+		traces2 := ptrace.NewTraces()
+		inputResourceSpan2 := traces2.ResourceSpans().AppendEmpty()
+		inputScopeSpan2 := inputResourceSpan2.ScopeSpans().AppendEmpty()
+		inputJobSpan := inputScopeSpan2.Spans().AppendEmpty()
+
+		inputJobSpan.SetSpanID(jobSpanId)
+		inputJobSpan.Attributes().PutInt(JOB_KEY_VALUE, 1)
+
+		// act
+		err := connector.ConsumeTraces(ctx, traces1)
+		require.NoError(t, err)
+		err = connector.ConsumeTraces(ctx, traces2)
+		require.NoError(t, err)
+
+		// assert
+		outputTraces := tracesConsumer.AllTraces()
+		assert.Equal(t, 1, len(outputTraces))
+
+		outputResourceSpans := outputTraces[0].ResourceSpans()
+		assert.Equal(t, 1, outputResourceSpans.Len())
+
+		outputScopeSpans := outputResourceSpans.At(0).ScopeSpans()
+		assert.Equal(t, 1, outputScopeSpans.Len())
+
+		outputSpans := outputScopeSpans.At(0).Spans()
+		assert.Equal(t, 3, outputSpans.Len()) // root span + entity span + job span
+
+		spanTrees := buildSpanTrees(&outputSpans)
+		assert.NotNil(t, spanTrees)
+		assert.Len(t, spanTrees, 1)
+		assert.Len(t, spanTrees[0].children, 1)
+		assert.Len(t, spanTrees[0].children[0].children, 1)
+
+		rootSpan := spanTrees[0].span
+		jobSpan := spanTrees[0].children[0].span
+		entitySpan := spanTrees[0].children[0].children[0].span
+
+		assertAllUnequal(t, []any{rootSpan.ParentSpanID(), jobSpan.ParentSpanID(), entitySpan.ParentSpanID()})
+		assert.True(t, rootSpan.ParentSpanID().IsEmpty())
+		assert.Equal(t, rootSpan.SpanID(), jobSpan.ParentSpanID())
+		assert.Equal(t, jobSpan.SpanID(), entitySpan.ParentSpanID())
+
+		actualJob, actualJobExists := jobSpan.Attributes().Get(JOB_KEY_VALUE)
+		actualKey, actualKeyExists := entitySpan.Attributes().Get(ENTITY_KEY_VALUE)
+		actualTest, actualTestExists := entitySpan.Attributes().Get("test.key")
+		assert.True(t, actualJobExists)
+		assert.True(t, actualKeyExists)
+		assert.True(t, actualTestExists)
+		assert.Equal(t, "1", actualJob.AsString())
+		assert.Equal(t, "1", actualKey.AsString())
+		assert.Equal(t, "test.value", actualTest.AsString())
+	})
 }
 
 func TestTracesSampling(t *testing.T) {
@@ -455,10 +491,10 @@ func TestTracesSampling(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
 		cfg := &Config{
-			MaxCachedEntities:        0,
 			EntityKey:                ENTITY_KEY_VALUE,
 			JobKey:                   JOB_KEY_VALUE,
 			NonErrorSamplingFraction: 2,
+			MaxCacheDuration:         0,
 		}
 		connector, err := newTracesConnector(zap.NewNop(), cfg, tracesConsumer)
 		require.NoError(t, err)
@@ -471,6 +507,7 @@ func TestTracesSampling(t *testing.T) {
 
 		for i := range int64(100) {
 			inputSpan := inputScopeSpan.Spans().AppendEmpty()
+			inputSpan.SetSpanID(generateSpanID())
 			inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, i)
 		}
 
@@ -505,10 +542,10 @@ func TestTracesSampling(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
 		cfg := &Config{
-			MaxCachedEntities:        0,
 			EntityKey:                ENTITY_KEY_VALUE,
 			JobKey:                   JOB_KEY_VALUE,
 			NonErrorSamplingFraction: 2,
+			MaxCacheDuration:         0,
 		}
 		connector, err := newTracesConnector(zap.NewNop(), cfg, tracesConsumer)
 		require.NoError(t, err)
@@ -521,6 +558,7 @@ func TestTracesSampling(t *testing.T) {
 
 		for range 100 {
 			inputSpan := inputScopeSpan.Spans().AppendEmpty()
+			inputSpan.SetSpanID(generateSpanID())
 			inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		}
 
@@ -552,10 +590,10 @@ func TestTracesSampling(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
 		cfg := &Config{
-			MaxCachedEntities:        0,
 			EntityKey:                ENTITY_KEY_VALUE,
 			JobKey:                   JOB_KEY_VALUE,
 			NonErrorSamplingFraction: 7,
+			MaxCacheDuration:         0,
 		}
 		connector, err := newTracesConnector(zap.NewNop(), cfg, tracesConsumer)
 		require.NoError(t, err)
@@ -568,6 +606,7 @@ func TestTracesSampling(t *testing.T) {
 
 		for range 100 {
 			inputSpan := inputScopeSpan.Spans().AppendEmpty()
+			inputSpan.SetSpanID(generateSpanID())
 			inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		}
 
@@ -614,6 +653,7 @@ func TestMetricsConnector(t *testing.T) {
 		inputScopeSpan := inputResourceSpan.ScopeSpans().AppendEmpty()
 		inputSpan := inputScopeSpan.Spans().AppendEmpty()
 
+		inputSpan.SetSpanID(generateSpanID())
 		inputSpan.Attributes().PutInt("other", 1)
 
 		// act
@@ -651,26 +691,33 @@ func TestMetricsConnector(t *testing.T) {
 		inputJobSpan2.SetSpanID(jobSpanId2)
 		inputJobSpan2.Attributes().PutInt(JOB_KEY_VALUE, 2)
 
+		inputSpan1.SetSpanID(generateSpanID())
 		inputSpan1.SetParentSpanID(jobSpanId1)
 		inputSpan1.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		inputSpan1.Attributes().PutStr("test.key", "test.value")
 
+		inputSpan2.SetSpanID(generateSpanID())
 		inputSpan2.SetParentSpanID(jobSpanId2)
 		inputSpan2.Attributes().PutInt(ENTITY_KEY_VALUE, 2)
 		inputSpan2.Attributes().PutStr("test.key", "test.value")
 
+		inputSpan3.SetSpanID(generateSpanID())
 		inputSpan3.SetParentSpanID(jobSpanId1)
 		inputSpan3.Attributes().PutInt(ENTITY_KEY_VALUE, 3)
 
+		inputSpan4.SetSpanID(generateSpanID())
 		inputSpan4.SetParentSpanID(jobSpanId1)
 		inputSpan4.Attributes().PutInt(ENTITY_KEY_VALUE, 4)
 
+		inputSpan5.SetSpanID(generateSpanID())
 		inputSpan5.SetParentSpanID(jobSpanId1)
 		inputSpan5.Attributes().PutInt(ENTITY_KEY_VALUE, 5)
 
+		inputSpan6.SetSpanID(generateSpanID())
 		inputSpan6.SetParentSpanID(jobSpanId1)
 		inputSpan6.Attributes().PutInt(ENTITY_KEY_VALUE, 6)
 
+		inputSpan7.SetSpanID(generateSpanID())
 		inputSpan7.SetParentSpanID(jobSpanId1)
 		inputSpan7.Attributes().PutInt(ENTITY_KEY_VALUE, 7)
 		inputSpan7.Status().SetCode(ptrace.StatusCodeError)
@@ -750,7 +797,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, 1, exampleConfig.NonErrorSamplingFraction)
 	assert.Equal(t, ENTITY_KEY_VALUE, exampleConfig.EntityKey)
 	assert.Equal(t, JOB_KEY_VALUE, exampleConfig.JobKey)
-	assert.Equal(t, 10000, exampleConfig.MaxCachedEntities)
+	assert.Equal(t, time.Hour, exampleConfig.MaxCacheDuration)
 }
 
 func TestConfigValidation(t *testing.T) {
@@ -758,32 +805,20 @@ func TestConfigValidation(t *testing.T) {
 		cfg := &Config{
 			EntityKey:                ENTITY_KEY_VALUE,
 			JobKey:                   JOB_KEY_VALUE,
-			MaxCachedEntities:        10000,
 			NonErrorSamplingFraction: 0,
+			MaxCacheDuration:         time.Hour,
 		}
 		err := xconfmap.Validate(cfg)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "non_error_sampling_fraction must be greater than 0")
 	})
 
-	t.Run("MaxCachedEntities -1", func(t *testing.T) {
-		cfg := &Config{
-			EntityKey:                ENTITY_KEY_VALUE,
-			JobKey:                   JOB_KEY_VALUE,
-			MaxCachedEntities:        -1,
-			NonErrorSamplingFraction: 1,
-		}
-		err := xconfmap.Validate(cfg)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "max_cached_entities must be positive")
-	})
-
 	t.Run("no JobKey", func(t *testing.T) {
 		cfg := &Config{
 			EntityKey:                ENTITY_KEY_VALUE,
 			JobKey:                   "",
-			MaxCachedEntities:        10000,
 			NonErrorSamplingFraction: 1,
+			MaxCacheDuration:         time.Hour,
 		}
 		err := xconfmap.Validate(cfg)
 		assert.Error(t, err)
@@ -794,12 +829,24 @@ func TestConfigValidation(t *testing.T) {
 		cfg := &Config{
 			EntityKey:                "",
 			JobKey:                   JOB_KEY_VALUE,
-			MaxCachedEntities:        10000,
 			NonErrorSamplingFraction: 1,
+			MaxCacheDuration:         time.Hour,
 		}
 		err := xconfmap.Validate(cfg)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "entity_key must be set")
+	})
+
+	t.Run("negative MaxCacheDuration", func(t *testing.T) {
+		cfg := &Config{
+			EntityKey:                ENTITY_KEY_VALUE,
+			JobKey:                   JOB_KEY_VALUE,
+			NonErrorSamplingFraction: 1,
+			MaxCacheDuration:         -1,
+		}
+		err := xconfmap.Validate(cfg)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "max_cache_duration must be positive")
 	})
 }
 

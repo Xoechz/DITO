@@ -18,8 +18,9 @@ import (
 const dito_SERVICE_NAME = "dito"
 
 type ditoEntitySpan struct {
-	entityKey string
-	span      ptrace.Span
+	entityKey  string
+	span       ptrace.Span
+	receivedAt time.Time
 }
 
 type ditoJobSpan struct {
@@ -28,10 +29,11 @@ type ditoJobSpan struct {
 }
 
 type ditoCacheEntry struct {
-	traceId              pcommon.TraceID
-	rootSpanId           pcommon.SpanID
-	jobSpanIds           map[pcommon.SpanID]pcommon.SpanID
-	countSinceLastSample int
+	traceId         pcommon.TraceID
+	rootSpanId      pcommon.SpanID
+	jobSpanIds      map[pcommon.SpanID]pcommon.SpanID
+	samplingCounter int
+	createdAt       time.Time
 }
 
 type metricGroup struct {
@@ -46,8 +48,9 @@ type ditoTracesConnector struct {
 	component.StartFunc
 	component.ShutdownFunc
 	// cache protected by cacheMu
-	cache   map[string]*ditoCacheEntry
-	cacheMu sync.RWMutex
+	cache       map[string]*ditoCacheEntry
+	entitySpans map[pcommon.SpanID]*ditoEntitySpan
+	mutex       sync.RWMutex
 }
 
 type ditoMetricsConnector struct {
@@ -67,6 +70,7 @@ func newTracesConnector(logger *zap.Logger, config component.Config, nextConsume
 		logger:        logger,
 		traceConsumer: nextConsumer,
 		cache:         make(map[string]*ditoCacheEntry),
+		entitySpans:   make(map[pcommon.SpanID]*ditoEntitySpan),
 	}, nil
 }
 
@@ -90,43 +94,70 @@ func (s *ditoMetricsConnector) Capabilities() consumer.Capabilities {
 }
 
 func (s *ditoTracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	entitySpans, jobSpans := gatherSpans(td.ResourceSpans(), &s.config)
+	newEntitySpans, jobSpans := gatherSpans(td.ResourceSpans(), &s.config)
 
-	if len(entitySpans) == 0 {
+	if len(newEntitySpans) == 0 && len(jobSpans) == 0 {
 		s.logger.Debug("No entity spans collected")
 		return nil
 	}
 
+	// All cache interactions + potential writes are protected
+	// If the duration of waiting for the log is too long, we may need to optimize this
+	beforeLock := time.Now()
+	s.mutex.Lock()
+	lockWaitTime := time.Since(beforeLock)
+
+	s.logger.Debug("Acquired cache lock",
+		zap.Duration("wait_duration", lockWaitTime),
+	)
+
+	receivedTime := time.Now()
+	for _, span := range newEntitySpans {
+		s.entitySpans[span.span.SpanID()] = &ditoEntitySpan{
+			entityKey:  span.entityKey,
+			span:       span.span,
+			receivedAt: receivedTime,
+		}
+	}
+
+	entitySpanCount := len(s.entitySpans)
+
 	// Process the collected spans
 	entityTrace := ptrace.NewTraces()
 	rs := entityTrace.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().EnsureCapacity(3)
 	rs.Resource().Attributes().PutStr("service.name", dito_SERVICE_NAME)
+	rs.Resource().Attributes().PutInt("dito.lock_wait_duration", lockWaitTime.Milliseconds())
+	rs.Resource().Attributes().PutInt("dito.entity.pending", int64(entitySpanCount))
 	scopeSpan := rs.ScopeSpans().AppendEmpty()
 	scopeSpan.Scope().SetName(dito_SERVICE_NAME)
-	scopeSpan.Spans().EnsureCapacity(len(entitySpans))
+	scopeSpan.Spans().EnsureCapacity(entitySpanCount)
 
-	for _, entitySpan := range entitySpans {
-		s.ConsumeSpan(jobSpans, scopeSpan, entitySpan)
-	}
+	consumedSpanIds := make([]pcommon.SpanID, 0, entitySpanCount)
+	for _, entitySpan := range s.entitySpans {
+		consumed := s.ConsumeSpan(jobSpans, scopeSpan, entitySpan)
 
-	// perform size check under lock
-	s.cacheMu.RLock()
-	needClear := len(s.cache) > s.config.MaxCachedEntities
-	s.cacheMu.RUnlock()
-
-	if needClear {
-		s.cacheMu.Lock()
-
-		// re-check if it wasn't cleared in the meantime
-		if len(s.cache) > s.config.MaxCachedEntities {
-			s.logger.Debug("Max cached entities reached. Cache will be cleared")
-			s.cache = make(map[string]*ditoCacheEntry)
+		if consumed {
+			consumedSpanIds = append(consumedSpanIds, entitySpan.span.SpanID())
 		}
-
-		s.cacheMu.Unlock()
 	}
 
-	return s.traceConsumer.ConsumeTraces(ctx, entityTrace)
+	rs.Resource().Attributes().PutInt("dito.entity.consumed", int64(len(consumedSpanIds)))
+
+	for _, spanID := range consumedSpanIds {
+		delete(s.entitySpans, spanID)
+	}
+
+	s.mutex.Unlock()
+
+	s.sweepCache()
+
+	if scopeSpan.Spans().Len() == 0 {
+		// if no spans were consumed, we do not forward the trace
+		return nil
+	} else {
+		return s.traceConsumer.ConsumeTraces(ctx, entityTrace)
+	}
 }
 
 func (s *ditoMetricsConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
@@ -198,25 +229,24 @@ func (s *ditoMetricsConnector) ConsumeTraces(ctx context.Context, td ptrace.Trac
 	return s.metricsConsumer.ConsumeMetrics(ctx, metrics)
 }
 
-func (s *ditoTracesConnector) ConsumeSpan(jobSpans map[pcommon.SpanID]ditoJobSpan, scopeSpan ptrace.ScopeSpans, entitySpan ditoEntitySpan) {
-	// All cache interactions + potential writes are protected
-	// If the duration of waiting for the log is too long, we may need to optimize this
-	beforeLock := time.Now()
-	s.cacheMu.Lock()
-	afterLock := time.Now()
+func (s *ditoTracesConnector) ConsumeSpan(jobSpans map[pcommon.SpanID]ditoJobSpan, scopeSpan ptrace.ScopeSpans, entitySpan *ditoEntitySpan) bool {
+	// check if job span exists, if not wait for the job span(for a max duration)
+	jobSpan, jobSpanExists := jobSpans[entitySpan.span.ParentSpanID()]
 
-	s.logger.Debug("Acquired cache lock",
-		zap.String("entityKey", entitySpan.entityKey),
-		zap.Duration("wait_duration", afterLock.Sub(beforeLock)),
-	)
+	currentTime := time.Now()
+	if !jobSpanExists && entitySpan.receivedAt.Add(s.config.MaxCacheDuration).After(currentTime) {
+		// wait for the job span to arrive
+		return false
+	}
 
 	cache, cacheHit := s.cache[entitySpan.entityKey]
 	if !cacheHit {
 		cache = &ditoCacheEntry{
-			traceId:              generateTraceID(),
-			rootSpanId:           generateSpanID(),
-			jobSpanIds:           make(map[pcommon.SpanID]pcommon.SpanID),
-			countSinceLastSample: s.config.NonErrorSamplingFraction,
+			traceId:         generateTraceID(),
+			rootSpanId:      generateSpanID(),
+			jobSpanIds:      make(map[pcommon.SpanID]pcommon.SpanID),
+			samplingCounter: 0,
+			createdAt:       currentTime,
 		}
 		s.cache[entitySpan.entityKey] = cache
 
@@ -224,25 +254,22 @@ func (s *ditoTracesConnector) ConsumeSpan(jobSpans map[pcommon.SpanID]ditoJobSpa
 		rootSpan.SetName(entitySpan.entityKey)
 		rootSpan.SetTraceID(cache.traceId)
 		rootSpan.SetSpanID(cache.rootSpanId)
-		rootSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		rootSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		rootSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(currentTime))
+		rootSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(currentTime))
 	}
 
 	// If the span is not an error, we apply sampling, every 1 in nonErrorSamplingFraction entitySpan of a specific key will be kept
 	if entitySpan.span.Status().Code() != ptrace.StatusCodeError {
-		cache.countSinceLastSample++
+		drop := cache.samplingCounter != 0
+		cache.samplingCounter = (cache.samplingCounter + 1) % s.config.NonErrorSamplingFraction
 
-		if cache.countSinceLastSample < s.config.NonErrorSamplingFraction {
+		if drop {
 			s.logger.Debug("Non-error span skipped due to sampling", zap.String("entityKey", entitySpan.entityKey))
-			s.cacheMu.Unlock()
-			return
-		} else {
-			cache.countSinceLastSample = 0
+			return true
 		}
 	}
 
 	parentSpanId := cache.rootSpanId
-	jobSpan, jobSpanExists := jobSpans[entitySpan.span.ParentSpanID()]
 
 	if jobSpanExists {
 		jobSpanId, exists := cache.jobSpanIds[jobSpan.span.SpanID()]
@@ -272,13 +299,38 @@ func (s *ditoTracesConnector) ConsumeSpan(jobSpans map[pcommon.SpanID]ditoJobSpa
 	es.SetTraceID(cache.traceId)
 	es.SetSpanID(newSpanId)
 	es.SetParentSpanID(parentSpanId)
-	es.Attributes().PutInt("dito.lock_wait_duration", afterLock.Sub(beforeLock).Milliseconds())
 
 	eLink := es.Links().AppendEmpty()
 	eLink.SetTraceID(entitySpan.span.TraceID())
 	eLink.SetSpanID(entitySpan.span.SpanID())
 
-	s.cacheMu.Unlock()
+	return true
+}
+
+func (s *ditoTracesConnector) sweepCache() {
+	expired := make([]string, 0)
+	currentTime := time.Now()
+
+	s.mutex.RLock()
+	for key, entry := range s.cache {
+		if entry.createdAt.Add(s.config.MaxCacheDuration).Before(currentTime) {
+			expired = append(expired, key)
+		}
+	}
+	s.mutex.RUnlock()
+
+	if len(expired) > 0 {
+		s.mutex.Lock()
+		for _, key := range expired {
+			//recheck
+			entry, exists := s.cache[key]
+
+			if exists && entry.createdAt.Add(s.config.MaxCacheDuration).Before(currentTime) {
+				delete(s.cache, key)
+			}
+		}
+		s.mutex.Unlock()
+	}
 }
 
 func gatherSpans(rss ptrace.ResourceSpansSlice, config *Config) (entitySpans []ditoEntitySpan, jobSpans map[pcommon.SpanID]ditoJobSpan) {
