@@ -36,20 +36,20 @@ func createTracesToTracesConnector(
 	return newTraceConnector(params.Logger, cfg, nextConsumer)
 }
 
-// func createTracesToMetricsConnector(
-// 	ctx context.Context,
-// 	params connector.Settings,
-// 	cfg component.Config,
-// 	nextConsumer consumer.Metrics,
-// ) (connector.Traces, error) {
-// 	return newMetricsConnector(params.Logger, cfg, nextConsumer)
-// }
+func createTracesToMetricsConnector(
+	ctx context.Context,
+	params connector.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (connector.Traces, error) {
+	return newMetricConnector(params.Logger, cfg, nextConsumer)
+}
 
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		connector.WithTracesToTraces(createTracesToTracesConnector, component.StabilityLevelAlpha),
-		// connector.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelAlpha),
+		connector.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelAlpha),
 	)
 }

@@ -6,6 +6,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+const (
+	SERVICE_NAME = "dito"
+)
+
 func generateTraceID() pcommon.TraceID {
 	var tid [16]byte
 	_, err := rand.Read(tid[:])

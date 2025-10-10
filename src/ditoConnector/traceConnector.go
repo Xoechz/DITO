@@ -12,16 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	SERVICE_NAME = "dito"
-)
-
-type entityWorkItem struct {
-	entityKey  string
-	span       ptrace.Span
-	receivedAt time.Time
-}
-
 type traceConnector struct {
 	logger          *zap.Logger
 	config          Config
@@ -39,7 +29,7 @@ func (s *traceConnector) Capabilities() consumer.Capabilities {
 }
 
 func newTraceConnector(logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) (*traceConnector, error) {
-	logger.Info("Building dito traces connector")
+	logger.Info("Building dito trace connector")
 	cfg := config.(*Config)
 
 	return &traceConnector{
@@ -57,6 +47,8 @@ func (s *traceConnector) Start(ctx context.Context, host component.Host) error {
 		return nil
 	}
 	s.started = true
+
+	s.logger.Info("Starting dito trace connector")
 
 	// Workers: process entity items.
 	for i := 0; i < s.config.WorkerCount; i++ {
@@ -124,6 +116,9 @@ func (s *traceConnector) Shutdown(ctx context.Context) error {
 	if !s.started {
 		return nil
 	}
+
+	s.logger.Info("Shutting down dito trace connector")
+
 	close(s.shutdownChannel)
 	s.started = false
 	s.workerWG.Wait()
@@ -137,16 +132,14 @@ func (s *traceConnector) Shutdown(ctx context.Context) error {
 func (s *traceConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	s.sharedCache.ingestTraces(td, &s.config)
 
-	s.logger.Info("Traces ingested", zap.Int("messageQueueLength", len(s.sharedCache.messageQueue)), zap.Int("outputQueueLength", len(s.sharedCache.outputQueue)))
+	s.logger.Debug("Traces ingested", zap.Int("messageQueueLength", len(s.sharedCache.messageQueue)), zap.Int("outputQueueLength", len(s.sharedCache.outputQueue)))
 
 	return nil
 }
 
 func (s *traceConnector) processMessage(msg *entityWorkItem) {
-	s.logger.Info("Processing message", zap.String("entityKey", msg.entityKey), zap.String("spanName", msg.span.Name()), zap.String("spanID", msg.span.SpanID().String()), zap.String("parentSpanID", msg.span.ParentSpanID().String()))
-
 	// check if job span exists, if not wait for the job span(for a max duration)
-	jobSpan, jobState := s.sharedCache.getJobSpan(msg.span.ParentSpanID(), msg.entityKey)
+	jobSpan, newJobSpanId, jobState := s.sharedCache.getJobSpan(msg.span.ParentSpanID(), msg.entityKey)
 
 	currentTime := time.Now()
 	waitingTimeNotExceeded := msg.receivedAt.Add(s.config.MaxCacheDuration).After(currentTime)
@@ -187,11 +180,17 @@ func (s *traceConnector) processMessage(msg *entityWorkItem) {
 
 	parentSpanId := cache.rootSpanId
 	if jobState != JobStateNotFound {
-		parentSpanId = jobSpan.SpanID()
+		parentSpanId = newJobSpanId
 	}
 
 	if jobState == JobStateCreated {
+		// add link to the original job span
+		jLink := jobSpan.Links().AppendEmpty()
+		jLink.SetTraceID(jobSpan.TraceID())
+		jLink.SetSpanID(jobSpan.SpanID())
+
 		jobSpan.SetTraceID(cache.traceId)
+		jobSpan.SetSpanID(newJobSpanId)
 		jobSpan.SetParentSpanID(cache.rootSpanId)
 
 		s.sharedCache.outputQueue <- jobSpan
@@ -217,8 +216,6 @@ func (s *traceConnector) flushOutput() {
 		return
 	}
 
-	s.logger.Info("Flushing output", zap.Int("outputQueueLength", len(s.sharedCache.outputQueue)))
-
 	batch := ptrace.NewTraces()
 	rs := batch.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().EnsureCapacity(3)
@@ -233,7 +230,7 @@ func (s *traceConnector) flushOutput() {
 		span.CopyTo(scopeSpan.Spans().AppendEmpty())
 	}
 
-	s.logger.Info("Flushed output", zap.Int("outputQueueLength", len(s.sharedCache.outputQueue)))
+	s.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(s.sharedCache.messageQueue)))
 	err := s.traceConsumer.ConsumeTraces(context.Background(), batch)
 	if err != nil {
 		s.logger.Error("Error sending traces to next consumer", zap.Error(err))
