@@ -9,23 +9,38 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+type JobState int
+
+const (
+	JobStateNotFound JobState = iota
+	JobStateFound
+	JobStateCreated
+)
+
+type entityInfo struct {
+	traceId         pcommon.TraceID
+	rootSpanId      pcommon.SpanID
+	samplingCounter int
+}
+
 type entityInfoCacheItem struct {
 	traceId         pcommon.TraceID
 	rootSpanId      pcommon.SpanID
-	jobSpanIds      map[pcommon.SpanID]pcommon.SpanID //ingested job SpanID -> new SpanID
 	samplingCounter int
 	createdAt       time.Time
 }
 
 type jobCacheItem struct {
-	jobSpan    *ptrace.Span
-	receivedAt time.Time
+	jobSpan       *ptrace.Span
+	newJobSpanIds map[string]pcommon.SpanID // entityKey -> new SpanID
+	receivedAt    time.Time
 }
 
 type entityInfoCacheShard struct {
 	entityInfoCache map[string]*entityInfoCacheItem
 	mu              sync.RWMutex
 }
+
 type jobCacheShard struct {
 	jobCache map[pcommon.SpanID]*jobCacheItem // ingested job SpanID -> ingested job span
 	mu       sync.RWMutex
@@ -38,19 +53,22 @@ type sharedCache struct {
 	entityShardCount int
 	jobShardCount    int
 	maxAge           time.Duration
+	messageQueue     chan *entityWorkItem
+	outputQueue      chan *ptrace.Span
+	lastBatchTime    time.Time
 }
 
-func newSharedCache(entityShardCount int, jobShardCount int, maxAge time.Duration) *sharedCache {
-	entityShards := make([]*entityInfoCacheShard, entityShardCount)
-	jobShards := make([]*jobCacheShard, jobShardCount)
+func newSharedCache(cfg *Config) *sharedCache {
+	entityShards := make([]*entityInfoCacheShard, cfg.CacheShardCount)
+	jobShards := make([]*jobCacheShard, cfg.CacheShardCount)
 
-	for i := 0; i < entityShardCount; i++ {
+	for i := 0; i < cfg.CacheShardCount; i++ {
 		entityShards[i] = &entityInfoCacheShard{
 			entityInfoCache: make(map[string]*entityInfoCacheItem),
 		}
 	}
 
-	for i := 0; i < jobShardCount; i++ {
+	for i := 0; i < cfg.CacheShardCount; i++ {
 		jobShards[i] = &jobCacheShard{
 			jobCache: make(map[pcommon.SpanID]*jobCacheItem),
 		}
@@ -60,9 +78,12 @@ func newSharedCache(entityShardCount int, jobShardCount int, maxAge time.Duratio
 		jobAddQueue:      make(chan *jobCacheItem, 1000),
 		entityShards:     entityShards,
 		jobShards:        jobShards,
-		entityShardCount: entityShardCount,
-		jobShardCount:    jobShardCount,
-		maxAge:           maxAge,
+		entityShardCount: cfg.CacheShardCount,
+		jobShardCount:    cfg.CacheShardCount,
+		maxAge:           cfg.MaxCacheDuration,
+		messageQueue:     make(chan *entityWorkItem, cfg.QueueSize),
+		outputQueue:      make(chan *ptrace.Span, cfg.BatchSize*cfg.WorkerCount),
+		lastBatchTime:    time.Now(),
 	}
 }
 
@@ -82,7 +103,7 @@ func (sc *sharedCache) shardForJob(jobSpanID pcommon.SpanID) *jobCacheShard {
 	return sc.jobShards[hash%uint32(sc.jobShardCount)]
 }
 
-func (sc *sharedCache) getOrCreateEntityEntry(entityKey string) (*entityInfoCacheItem, bool) {
+func (sc *sharedCache) getOrCreateEntityEntry(entityKey string) (entityInfo, bool) {
 	shard := sc.shardForEntity(entityKey)
 
 	shard.mu.RLock()
@@ -90,7 +111,13 @@ func (sc *sharedCache) getOrCreateEntityEntry(entityKey string) (*entityInfoCach
 	shard.mu.RUnlock()
 
 	if exists {
-		return entry, false
+		entry.samplingCounter++
+
+		return entityInfo{
+			traceId:         entry.traceId,
+			rootSpanId:      entry.rootSpanId,
+			samplingCounter: entry.samplingCounter,
+		}, false
 	}
 
 	shard.mu.Lock()
@@ -100,56 +127,144 @@ func (sc *sharedCache) getOrCreateEntityEntry(entityKey string) (*entityInfoCach
 	entry, exists = shard.entityInfoCache[entityKey]
 
 	if exists {
-		return entry, false
+		entry.samplingCounter++
+
+		return entityInfo{
+			traceId:         entry.traceId,
+			rootSpanId:      entry.rootSpanId,
+			samplingCounter: entry.samplingCounter,
+		}, false
 	}
 
 	newEntry := &entityInfoCacheItem{
 		traceId:         generateTraceID(),
 		rootSpanId:      generateSpanID(),
-		jobSpanIds:      make(map[pcommon.SpanID]pcommon.SpanID),
 		samplingCounter: 0,
 		createdAt:       time.Now(),
 	}
 
 	shard.entityInfoCache[entityKey] = newEntry
-	return newEntry, true
+
+	return entityInfo{
+		traceId:         newEntry.traceId,
+		rootSpanId:      newEntry.rootSpanId,
+		samplingCounter: newEntry.samplingCounter,
+	}, true
 }
 
-func (sc *sharedCache) getJobSpan(jobSpanID pcommon.SpanID) (*ptrace.Span, bool) {
-	shard := sc.shardForJob(jobSpanID)
-
-	shard.mu.RLock()
-	jobItem, exists := shard.jobCache[jobSpanID]
-	shard.mu.RUnlock()
-
-	if exists {
-		return jobItem.jobSpan, true
-	}
-
-	addItem := <-sc.jobAddQueue
-	if addItem == nil {
-		return nil, false
-	}
-
-	for addItem != nil {
-		shard := sc.shardForJob(addItem.jobSpan.SpanID())
-		shard.mu.Lock()
-		shard.jobCache[addItem.jobSpan.SpanID()] = addItem
-		shard.mu.Unlock()
-
-		if addItem.jobSpan.SpanID() == jobSpanID {
-			jobItem = addItem
+func (sc *sharedCache) drainJobQueue() {
+	// Drain pending job spans without blocking.
+	for {
+		select {
+		case addItem := <-sc.jobAddQueue:
+			if addItem != nil {
+				shardAdd := sc.shardForJob(addItem.jobSpan.SpanID())
+				shardAdd.mu.Lock()
+				shardAdd.jobCache[addItem.jobSpan.SpanID()] = addItem
+				shardAdd.mu.Unlock()
+			}
+		default:
+			return
 		}
+	}
+}
 
-		addItem = <-sc.jobAddQueue
+func (sc *sharedCache) getJobSpan(jobSpanID pcommon.SpanID, entityKey string) (*ptrace.Span, JobState) {
+	sc.drainJobQueue()
+
+	shard := sc.shardForJob(jobSpanID)
+	shard.mu.Lock()
+	defer shard.mu.Unlock()
+
+	jobItem, exists := shard.jobCache[jobSpanID]
+
+	if !exists {
+		return nil, JobStateNotFound
 	}
 
-	return jobItem.jobSpan, jobItem != nil
+	// return a copy of the job span
+	returnSpan := ptrace.NewSpan()
+	jobItem.jobSpan.CopyTo(returnSpan)
+
+	// If the job span was already used for this entityKey, return the same spanID
+	newSpanId, exists := jobItem.newJobSpanIds[entityKey]
+	if exists {
+		returnSpan.SetSpanID(newSpanId)
+		return &returnSpan, JobStateFound
+	}
+
+	newSpanId = generateSpanID()
+	jobItem.newJobSpanIds[entityKey] = newSpanId
+
+	returnSpan.SetSpanID(newSpanId)
+	return &returnSpan, JobStateCreated
 }
 
 func (sc *sharedCache) addJobSpan(jobSpan *ptrace.Span, receivedAt time.Time) {
-	sc.jobAddQueue <- &jobCacheItem{
-		jobSpan:    jobSpan,
-		receivedAt: receivedAt,
+	// add a link to itself, so we don't lose the context when we are copying it later
+	jLink := jobSpan.Links().AppendEmpty()
+	jLink.SetTraceID(jobSpan.TraceID())
+	jLink.SetSpanID(jobSpan.SpanID())
+
+	select {
+	case sc.jobAddQueue <- &jobCacheItem{jobSpan: jobSpan, receivedAt: receivedAt, newJobSpanIds: make(map[string]pcommon.SpanID)}:
+	default:
+		// queue full, drop oldest intent silently (optional: add metric/log later)
+	}
+}
+
+func (sc *sharedCache) ingestTraces(td ptrace.Traces, cfg *Config) error {
+	rss := td.ResourceSpans()
+	now := time.Now()
+
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		ilss := rs.ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			for k := 0; k < ils.Spans().Len(); k++ {
+				span := ils.Spans().At(k)
+
+				entityKey, isEntity := span.Attributes().Get(cfg.EntityKey)
+				if isEntity {
+					sc.messageQueue <- &entityWorkItem{
+						entityKey:  entityKey.AsString(),
+						span:       span,
+						receivedAt: now,
+					}
+				}
+
+				_, isJob := span.Attributes().Get(cfg.JobKey)
+				if isJob {
+					sc.addJobSpan(&span, now)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (sc *sharedCache) sweep() {
+	now := time.Now()
+
+	for _, sh := range sc.entityShards {
+		sh.mu.Lock()
+		for k, e := range sh.entityInfoCache {
+			if e.createdAt.Add(sc.maxAge).Before(now) {
+				delete(sh.entityInfoCache, k)
+			}
+		}
+		sh.mu.Unlock()
+	}
+
+	for _, sh := range sc.jobShards {
+		sh.mu.Lock()
+		for k, e := range sh.jobCache {
+			if e.receivedAt.Add(sc.maxAge).Before(now) {
+				delete(sh.jobCache, k)
+			}
+		}
+		sh.mu.Unlock()
 	}
 }

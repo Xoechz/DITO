@@ -6,13 +6,15 @@ import (
 )
 
 type Config struct {
-	EntityKey                string        `mapstructure:"entity_key"`
-	JobKey                   string        `mapstructure:"job_key"`
-	MaxCacheDuration         time.Duration `mapstructure:"max_cache_duration"`
-	CacheShardCount          int           `mapstructure:"cache_shard_count"`
-	QueueSize                int           `mapstructure:"queue_size"`
-	WorkerCount              int           `mapstructure:"worker_count"`
-	NonErrorSamplingFraction int           `mapstructure:"non_error_sampling_fraction"`
+	EntityKey        string        `mapstructure:"entity_key"`
+	JobKey           string        `mapstructure:"job_key"`
+	MaxCacheDuration time.Duration `mapstructure:"max_cache_duration"`
+	CacheShardCount  int           `mapstructure:"cache_shard_count"`
+	QueueSize        int           `mapstructure:"queue_size"`
+	WorkerCount      int           `mapstructure:"worker_count"`
+	SamplingFraction int           `mapstructure:"sampling_fraction"`
+	BatchSize        int           `mapstructure:"batch_size"`
+	BatchTimeout     time.Duration `mapstructure:"batch_timeout"`
 }
 
 func (cfg *Config) Validate() error {
@@ -28,8 +30,8 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("max_cache_duration must be positive")
 	}
 
-	if cfg.NonErrorSamplingFraction < 1 {
-		return fmt.Errorf("non_error_sampling_fraction must be greater than 0")
+	if cfg.SamplingFraction < 1 {
+		return fmt.Errorf("sampling_fraction must be greater than 0")
 	}
 
 	if cfg.CacheShardCount < 1 {
@@ -42,6 +44,14 @@ func (cfg *Config) Validate() error {
 
 	if cfg.WorkerCount < 1 {
 		return fmt.Errorf("worker_count must be greater than 0")
+	}
+
+	if cfg.BatchSize < 1 {
+		return fmt.Errorf("batch_size must be greater than 0")
+	}
+
+	if cfg.BatchTimeout <= 0 {
+		return fmt.Errorf("batch_timeout must be positive")
 	}
 
 	return nil

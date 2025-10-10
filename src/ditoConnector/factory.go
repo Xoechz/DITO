@@ -13,19 +13,17 @@ var (
 	typeStr = component.MustNewType("dito")
 )
 
-const (
-	defaultEntityKey                = "dito.key"
-	defaultJobKey                   = "dito.job_id"
-	defaultMaxCacheDuration         = time.Hour
-	defaultNonErrorSamplingFraction = 1
-)
-
 func createDefaultConfig() component.Config {
 	return &Config{
-		EntityKey:                defaultEntityKey,
-		JobKey:                   defaultJobKey,
-		MaxCacheDuration:         defaultMaxCacheDuration,
-		NonErrorSamplingFraction: defaultNonErrorSamplingFraction,
+		EntityKey:        "dito.key",
+		JobKey:           "dito.job_id",
+		MaxCacheDuration: time.Hour,
+		SamplingFraction: 1,
+		CacheShardCount:  32,
+		QueueSize:        10000,
+		WorkerCount:      4,
+		BatchSize:        256,
+		BatchTimeout:     2 * time.Second,
 	}
 }
 
@@ -35,23 +33,23 @@ func createTracesToTracesConnector(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (connector.Traces, error) {
-	return newTracesConnector(params.Logger, cfg, nextConsumer)
+	return newTraceConnector(params.Logger, cfg, nextConsumer)
 }
 
-func createTracesToMetricsConnector(
-	ctx context.Context,
-	params connector.Settings,
-	cfg component.Config,
-	nextConsumer consumer.Metrics,
-) (connector.Traces, error) {
-	return newMetricsConnector(params.Logger, cfg, nextConsumer)
-}
+// func createTracesToMetricsConnector(
+// 	ctx context.Context,
+// 	params connector.Settings,
+// 	cfg component.Config,
+// 	nextConsumer consumer.Metrics,
+// ) (connector.Traces, error) {
+// 	return newMetricsConnector(params.Logger, cfg, nextConsumer)
+// }
 
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		connector.WithTracesToTraces(createTracesToTracesConnector, component.StabilityLevelAlpha),
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelAlpha),
+		// connector.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelAlpha),
 	)
 }
