@@ -46,7 +46,7 @@ func newMetricConnector(logger *zap.Logger, config component.Config, nextConsume
 		config:          *cfg,
 		logger:          logger,
 		metricConsumer:  nextConsumer,
-		sharedCache:     newSharedCache(cfg),
+		sharedCache:     newSharedCache(cfg, logger),
 		shutdownChannel: make(chan struct{}),
 	}, nil
 }
@@ -144,7 +144,7 @@ func (s *metricConnector) processMessages() {
 
 	for _, msg := range currentBatch {
 		// check if job span exists, if not wait for the job span(for a max duration)
-		jobSpan, _, jobState := s.sharedCache.getJobSpan(msg.span.ParentSpanID(), msg.entityKey)
+		jobSpan, _, jobState := s.sharedCache.getJobSpan(&msg.span, msg.entityKey)
 
 		currentTime := time.Now()
 		waitingTimeNotExceeded := msg.receivedAt.Add(s.config.MaxCacheDuration).After(currentTime)

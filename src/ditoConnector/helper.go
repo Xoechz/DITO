@@ -2,6 +2,7 @@ package dito
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -27,4 +28,17 @@ func generateSpanID() pcommon.SpanID {
 		// handle error appropriately
 	}
 	return pcommon.SpanID(sid)
+}
+
+func getSpanIDFromHexString(hexStr string) (pcommon.SpanID, error) {
+	spanID := pcommon.SpanID{}
+
+	byteArray, err := hex.DecodeString(hexStr)
+
+	if err != nil {
+		return spanID, err
+	}
+
+	spanID = pcommon.SpanID(byteArray)
+	return spanID, nil
 }

@@ -36,7 +36,7 @@ func newTraceConnector(logger *zap.Logger, config component.Config, nextConsumer
 		config:          *cfg,
 		logger:          logger,
 		traceConsumer:   nextConsumer,
-		sharedCache:     newSharedCache(cfg),
+		sharedCache:     newSharedCache(cfg, logger),
 		shutdownChannel: make(chan struct{}),
 	}, nil
 }
@@ -139,7 +139,7 @@ func (s *traceConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 
 func (s *traceConnector) processMessage(msg *entityWorkItem) {
 	// check if job span exists, if not wait for the job span(for a max duration)
-	jobSpan, newJobSpanId, jobState := s.sharedCache.getJobSpan(msg.span.ParentSpanID(), msg.entityKey)
+	jobSpan, newJobSpanId, jobState := s.sharedCache.getJobSpan(&msg.span, msg.entityKey)
 
 	currentTime := time.Now()
 	waitingTimeNotExceeded := msg.receivedAt.Add(s.config.MaxCacheDuration).After(currentTime)

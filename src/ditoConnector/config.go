@@ -8,6 +8,7 @@ import (
 type Config struct {
 	EntityKey        string        `mapstructure:"entity_key"`
 	JobKey           string        `mapstructure:"job_key"`
+	BaggageJobKey    string        `mapstructure:"baggage_job_key"`
 	MaxCacheDuration time.Duration `mapstructure:"max_cache_duration"`
 	CacheShardCount  int           `mapstructure:"cache_shard_count"`
 	QueueSize        int           `mapstructure:"queue_size"`
@@ -24,6 +25,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.JobKey == "" {
 		return fmt.Errorf("job_key must be set")
+	}
+
+	if cfg.BaggageJobKey == "" {
+		return fmt.Errorf("baggage_job_key must be set")
 	}
 
 	if cfg.MaxCacheDuration <= 0 {

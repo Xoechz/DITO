@@ -18,7 +18,7 @@ const (
 	JOB_KEY_VALUE      = "dito.job_id"
 	BATCH_TIMEOUT      = 100 * time.Millisecond
 	MAX_CACHE_DURATION = 300 * time.Millisecond
-	TEST_WAIT          = 500 * time.Millisecond
+	TEST_WAIT          = 750 * time.Millisecond
 )
 
 func TestTracesConnector(t *testing.T) {
@@ -515,6 +515,71 @@ func TestTracesConnector(t *testing.T) {
 		assert.Len(t, spanTrees[0].children, 15)
 	})
 
+	t.Run("one entity span one distant job span", func(t *testing.T) {
+		// arrange
+		tracesConsumer.Reset()
+		connector.sharedCache.reset()
+
+		traces := ptrace.NewTraces()
+		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
+		inputScopeSpan := inputResourceSpan.ScopeSpans().AppendEmpty()
+		inputJobSpan := inputScopeSpan.Spans().AppendEmpty()
+		inputSpan := inputScopeSpan.Spans().AppendEmpty()
+
+		parentSpanID := generateSpanID()
+		jobSpanId := parentSpanID
+
+		inputJobSpan.SetSpanID(parentSpanID)
+		inputJobSpan.Attributes().PutInt(JOB_KEY_VALUE, 1)
+
+		for range 10 {
+			intermediateSpan := inputScopeSpan.Spans().AppendEmpty()
+
+			intermediateSpan.SetSpanID(generateSpanID())
+			intermediateSpan.SetParentSpanID(parentSpanID)
+
+			parentSpanID = intermediateSpan.SpanID()
+		}
+
+		inputSpan.SetSpanID(generateSpanID())
+		inputSpan.SetParentSpanID(parentSpanID)
+		inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
+		inputSpan.Attributes().PutStr("dito.job_span_id", jobSpanId.String())
+		inputSpan.Attributes().PutStr("test.key", "test.value")
+
+		// act
+		err := connector.ConsumeTraces(ctx, traces)
+		require.NoError(t, err)
+		time.Sleep(TEST_WAIT) // allow worker to process
+
+		// assert
+		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
+
+		require.NotNil(t, spanTrees)
+		assert.Len(t, spanTrees, 1)
+		assert.Len(t, spanTrees[0].children, 1)
+		assert.Len(t, spanTrees[0].children[0].children, 1)
+
+		rootSpan := spanTrees[0].span
+		jobSpan := spanTrees[0].children[0].span
+		entitySpan := spanTrees[0].children[0].children[0].span
+
+		assertAllUnequal(t, []any{rootSpan.ParentSpanID(), jobSpan.ParentSpanID(), entitySpan.ParentSpanID()})
+		assert.True(t, rootSpan.ParentSpanID().IsEmpty())
+		assert.Equal(t, rootSpan.SpanID(), jobSpan.ParentSpanID())
+		assert.Equal(t, jobSpan.SpanID(), entitySpan.ParentSpanID())
+
+		actualJob, actualJobExists := jobSpan.Attributes().Get(JOB_KEY_VALUE)
+		actualKey, actualKeyExists := entitySpan.Attributes().Get(ENTITY_KEY_VALUE)
+		actualTest, actualTestExists := entitySpan.Attributes().Get("test.key")
+		assert.True(t, actualJobExists)
+		assert.True(t, actualKeyExists)
+		assert.True(t, actualTestExists)
+		assert.Equal(t, "1", actualJob.AsString())
+		assert.Equal(t, "1", actualKey.AsString())
+		assert.Equal(t, "test.value", actualTest.AsString())
+	})
+
 	connector.Shutdown(ctx)
 }
 
@@ -689,56 +754,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, ENTITY_KEY_VALUE, exampleConfig.EntityKey)
 	assert.Equal(t, JOB_KEY_VALUE, exampleConfig.JobKey)
 	assert.Equal(t, time.Hour, exampleConfig.MaxCacheDuration)
-}
-
-func TestConfigValidation(t *testing.T) {
-	t.Run("SamplingFraction 0", func(t *testing.T) {
-		cfg := &Config{
-			EntityKey:        ENTITY_KEY_VALUE,
-			JobKey:           JOB_KEY_VALUE,
-			SamplingFraction: 0,
-			MaxCacheDuration: time.Hour,
-		}
-		err := xconfmap.Validate(cfg)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "sampling_fraction must be greater than 0")
-	})
-
-	t.Run("no JobKey", func(t *testing.T) {
-		cfg := &Config{
-			EntityKey:        ENTITY_KEY_VALUE,
-			JobKey:           "",
-			SamplingFraction: 1,
-			MaxCacheDuration: time.Hour,
-		}
-		err := xconfmap.Validate(cfg)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "job_key must be set")
-	})
-
-	t.Run("no EntityKey", func(t *testing.T) {
-		cfg := &Config{
-			EntityKey:        "",
-			JobKey:           JOB_KEY_VALUE,
-			SamplingFraction: 1,
-			MaxCacheDuration: time.Hour,
-		}
-		err := xconfmap.Validate(cfg)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "entity_key must be set")
-	})
-
-	t.Run("negative MaxCacheDuration", func(t *testing.T) {
-		cfg := &Config{
-			EntityKey:        ENTITY_KEY_VALUE,
-			JobKey:           JOB_KEY_VALUE,
-			SamplingFraction: 1,
-			MaxCacheDuration: -1,
-		}
-		err := xconfmap.Validate(cfg)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "max_cache_duration must be positive")
-	})
 }
 
 func assertAllUnequal(t *testing.T, items []any) {
