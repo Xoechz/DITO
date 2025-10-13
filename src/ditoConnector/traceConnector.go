@@ -92,11 +92,11 @@ func (s *traceConnector) Start(ctx context.Context, host component.Host) error {
 		}
 	}()
 
-	// Sweeper periodic eviction.
+	// Sweeper periodic cache eviction and reprocessing.
 	s.sweeperWG.Add(1)
 	go func() {
 		defer s.sweeperWG.Done()
-		sweepTicker := time.NewTicker(s.config.MaxCacheDuration / 2)
+		sweepTicker := time.NewTicker(time.Second * 10)
 		defer sweepTicker.Stop()
 		for {
 			select {
@@ -104,6 +104,22 @@ func (s *traceConnector) Start(ctx context.Context, host component.Host) error {
 				return
 			case <-sweepTicker.C:
 				s.sharedCache.sweep()
+
+				waitQueueBuffer := make([]*entityWorkItem, 0, len(s.sharedCache.waitQueue))
+
+				// Drain waitQueue into buffer
+				// This ensures we reprocess all waiting items, but avoid a live-lock in case waitQueue keeps getting new items.
+				for len(s.sharedCache.waitQueue) > 0 {
+					msg := <-s.sharedCache.waitQueue
+					if msg == nil {
+						continue
+					}
+					waitQueueBuffer = append(waitQueueBuffer, msg)
+				}
+
+				for _, msg := range waitQueueBuffer {
+					s.sharedCache.messageQueue <- msg
+				}
 			}
 		}
 	}()
@@ -146,7 +162,7 @@ func (s *traceConnector) processMessage(msg *entityWorkItem) {
 	if jobState == JobStateNotFound && waitingTimeNotExceeded {
 		// Requeue non-blocking; if queue full, drop (avoid shutdown hang / deadlock)
 		select {
-		case s.sharedCache.messageQueue <- msg:
+		case s.sharedCache.waitQueue <- msg:
 		default:
 			s.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("entityKey", msg.entityKey))
 		}

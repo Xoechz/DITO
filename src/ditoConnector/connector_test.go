@@ -430,10 +430,14 @@ func TestTracesConnector(t *testing.T) {
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
 		inputScopeSpan := inputResourceSpan.ScopeSpans().AppendEmpty()
+		jobSpan := inputScopeSpan.Spans().AppendEmpty()
+		jobSpan.SetSpanID(generateSpanID())
+		jobSpan.Attributes().PutInt(JOB_KEY_VALUE, 1)
 
 		for i := range int64(100) {
 			inputSpan := inputScopeSpan.Spans().AppendEmpty()
 			inputSpan.SetSpanID(generateSpanID())
+			inputSpan.SetParentSpanID(jobSpan.SpanID())
 			inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, i)
 		}
 
@@ -450,6 +454,7 @@ func TestTracesConnector(t *testing.T) {
 
 		for _, rootSpan := range spanTrees {
 			assert.Len(t, rootSpan.children, 1)
+			assert.Len(t, rootSpan.children[0].children, 1)
 		}
 	})
 
@@ -464,10 +469,14 @@ func TestTracesConnector(t *testing.T) {
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
 		inputScopeSpan := inputResourceSpan.ScopeSpans().AppendEmpty()
+		jobSpan := inputScopeSpan.Spans().AppendEmpty()
+		jobSpan.SetSpanID(generateSpanID())
+		jobSpan.Attributes().PutInt(JOB_KEY_VALUE, 1)
 
 		for range 100 {
 			inputSpan := inputScopeSpan.Spans().AppendEmpty()
 			inputSpan.SetSpanID(generateSpanID())
+			inputSpan.SetParentSpanID(jobSpan.SpanID())
 			inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		}
 
@@ -481,7 +490,8 @@ func TestTracesConnector(t *testing.T) {
 
 		require.NotNil(t, spanTrees)
 		assert.Len(t, spanTrees, 1)
-		assert.Len(t, spanTrees[0].children, 50)
+		assert.Len(t, spanTrees[0].children, 1)
+		assert.Len(t, spanTrees[0].children[0].children, 50)
 	})
 
 	t.Run("same entities sampling with fraction 7", func(t *testing.T) {
@@ -495,10 +505,14 @@ func TestTracesConnector(t *testing.T) {
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
 		inputScopeSpan := inputResourceSpan.ScopeSpans().AppendEmpty()
+		jobSpan := inputScopeSpan.Spans().AppendEmpty()
+		jobSpan.SetSpanID(generateSpanID())
+		jobSpan.Attributes().PutInt(JOB_KEY_VALUE, 1)
 
 		for range 100 {
 			inputSpan := inputScopeSpan.Spans().AppendEmpty()
 			inputSpan.SetSpanID(generateSpanID())
+			inputSpan.SetParentSpanID(jobSpan.SpanID())
 			inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
 		}
 
@@ -512,7 +526,8 @@ func TestTracesConnector(t *testing.T) {
 
 		require.NotNil(t, spanTrees)
 		assert.Len(t, spanTrees, 1)
-		assert.Len(t, spanTrees[0].children, 15)
+		assert.Len(t, spanTrees[0].children, 1)
+		assert.Len(t, spanTrees[0].children[0].children, 15)
 	})
 
 	t.Run("one entity span one distant job span", func(t *testing.T) {
