@@ -16,13 +16,16 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: CD
+      run: cd src/ditoConnector
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version-file: src/ditoConnector/go.mod
 
     - name: Build
-      run: go build -v src/ditoConnector
+      run: go build -v
 
     - name: Test
-      run: go test -v src/ditoConnector
+      run: go test -v --cover
