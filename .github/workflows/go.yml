@@ -22,7 +22,7 @@ jobs:
         go-version-file: src/ditoConnector/go.mod
 
     - name: Build
-      run: cd src/ditoConnector && go build -v
+      run: cd src && ./ocb --config builder-config.yaml
 
     - name: Test
       run: cd src/ditoConnector && go test -v --cover
