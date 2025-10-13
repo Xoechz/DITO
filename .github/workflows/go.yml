@@ -16,13 +16,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: pwd
-      run: pwd && ls
-
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version-file: src/ditoConnector
+        go-version-file: src/ditoConnector/go.mod
 
     - name: Build
       run: go build -v src/ditoConnector
