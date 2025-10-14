@@ -284,30 +284,3 @@ func (sc *sharedCache) sweep() {
 		sh.mu.Unlock()
 	}
 }
-
-func (sc *sharedCache) reset() {
-	for _, sh := range sc.entityShards {
-		sh.mu.Lock()
-		sh.entityInfoCache = make(map[string]*entityInfoCacheItem)
-		sh.mu.Unlock()
-	}
-
-	for _, sh := range sc.jobShards {
-		sh.mu.Lock()
-		sh.jobCache = make(map[pcommon.SpanID]*jobCacheItem)
-		sh.mu.Unlock()
-	}
-
-	// Drain queues
-	for len(sc.messageQueue) > 0 {
-		<-sc.messageQueue
-	}
-
-	for len(sc.waitQueue) > 0 {
-		<-sc.waitQueue
-	}
-
-	for len(sc.outputQueue) > 0 {
-		<-sc.outputQueue
-	}
-}

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/vibeus/opentelemetry-collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
@@ -20,6 +21,33 @@ const (
 	MAX_CACHE_DURATION = 300 * time.Millisecond
 	TEST_WAIT          = 750 * time.Millisecond
 )
+
+func (sc *sharedCache) reset() {
+	for _, sh := range sc.entityShards {
+		sh.mu.Lock()
+		sh.entityInfoCache = make(map[string]*entityInfoCacheItem)
+		sh.mu.Unlock()
+	}
+
+	for _, sh := range sc.jobShards {
+		sh.mu.Lock()
+		sh.jobCache = make(map[pcommon.SpanID]*jobCacheItem)
+		sh.mu.Unlock()
+	}
+
+	// Drain queues
+	for len(sc.messageQueue) > 0 {
+		<-sc.messageQueue
+	}
+
+	for len(sc.waitQueue) > 0 {
+		<-sc.waitQueue
+	}
+
+	for len(sc.outputQueue) > 0 {
+		<-sc.outputQueue
+	}
+}
 
 func TestTracesConnector(t *testing.T) {
 	// Create a test consumer that captures traces

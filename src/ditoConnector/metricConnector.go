@@ -138,6 +138,46 @@ func (s *metricConnector) processMessages() {
 		currentBatch = append(currentBatch, msg)
 	}
 
+	metricGroups, minTime, maxTime := s.getMetricGroups(currentBatch)
+
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().EnsureCapacity(3)
+	rm.Resource().Attributes().PutStr("service.name", SERVICE_NAME)
+	rm.Resource().Attributes().PutInt("dito.entity.pending", int64(len(s.sharedCache.messageQueue)))
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName(SERVICE_NAME)
+
+	countMetric := sm.Metrics().AppendEmpty()
+	countMetric.SetName("dito.entity.count")
+
+	sum := countMetric.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+	for group, value := range *metricGroups {
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetStartTimestamp(minTime)
+		dp.SetTimestamp(maxTime)
+
+		value.jobSpan.Attributes().CopyTo(dp.Attributes())
+		dp.Attributes().PutStr("dito.entity.status_code", group.statusCode.String())
+		dp.SetIntValue(value.count)
+
+		exemplar := dp.Exemplars().AppendEmpty()
+		exemplar.SetTraceID(value.jobSpan.TraceID())
+		exemplar.SetSpanID(value.jobSpan.SpanID())
+	}
+
+	s.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(s.sharedCache.messageQueue)))
+	err := s.metricConsumer.ConsumeMetrics(context.Background(), metrics)
+	if err != nil {
+		s.logger.Error("Error sending metrics to next consumer", zap.Error(err))
+	}
+}
+
+func (s *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[metricGroup]metricValue, pcommon.Timestamp, pcommon.Timestamp) {
 	metricGroups := make(map[metricGroup]metricValue)
 	minTime := currentBatch[0].span.StartTimestamp()
 	maxTime := currentBatch[0].span.EndTimestamp()
@@ -157,9 +197,8 @@ func (s *metricConnector) processMessages() {
 			default:
 				s.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("entityKey", msg.entityKey))
 			}
-			return
+			continue
 		}
-
 		// cache and sampling are not needed for the metrics
 
 		statusCode := msg.span.Status().Code()
@@ -192,39 +231,5 @@ func (s *metricConnector) processMessages() {
 		}
 	}
 
-	metrics := pmetric.NewMetrics()
-	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().EnsureCapacity(3)
-	rm.Resource().Attributes().PutStr("service.name", SERVICE_NAME)
-	rm.Resource().Attributes().PutInt("dito.entity.pending", int64(len(s.sharedCache.messageQueue)))
-
-	sm := rm.ScopeMetrics().AppendEmpty()
-	sm.Scope().SetName(SERVICE_NAME)
-
-	countMetric := sm.Metrics().AppendEmpty()
-	countMetric.SetName("dito.entity.count")
-
-	sum := countMetric.SetEmptySum()
-	sum.SetIsMonotonic(true)
-	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-
-	for group, value := range metricGroups {
-		dp := sum.DataPoints().AppendEmpty()
-		dp.SetStartTimestamp(minTime)
-		dp.SetTimestamp(maxTime)
-
-		value.jobSpan.Attributes().CopyTo(dp.Attributes())
-		dp.Attributes().PutStr("dito.entity.status_code", group.statusCode.String())
-		dp.SetIntValue(value.count)
-
-		exemplar := dp.Exemplars().AppendEmpty()
-		exemplar.SetTraceID(value.jobSpan.TraceID())
-		exemplar.SetSpanID(value.jobSpan.SpanID())
-	}
-
-	s.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(s.sharedCache.messageQueue)))
-	err := s.metricConsumer.ConsumeMetrics(context.Background(), metrics)
-	if err != nil {
-		s.logger.Error("Error sending metrics to next consumer", zap.Error(err))
-	}
+	return &metricGroups, minTime, maxTime
 }

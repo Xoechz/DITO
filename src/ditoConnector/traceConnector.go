@@ -49,7 +49,14 @@ func (s *traceConnector) Start(ctx context.Context, host component.Host) error {
 	s.started = true
 
 	s.logger.Info("Starting dito trace connector")
+	s.startWorkers()
+	s.startBatcher()
+	s.startSweeper()
 
+	return nil
+}
+
+func (s *traceConnector) startWorkers() {
 	// Workers: process entity items.
 	for i := 0; i < s.config.WorkerCount; i++ {
 		s.workerWG.Add(1)
@@ -68,7 +75,9 @@ func (s *traceConnector) Start(ctx context.Context, host component.Host) error {
 			}
 		}(i)
 	}
+}
 
+func (s *traceConnector) startBatcher() {
 	// Batcher: flush outputQueue on size or timeout.
 	s.batchWG.Add(1)
 	go func() {
@@ -91,7 +100,9 @@ func (s *traceConnector) Start(ctx context.Context, host component.Host) error {
 			}
 		}
 	}()
+}
 
+func (s *traceConnector) startSweeper() {
 	// Sweeper periodic cache eviction and reprocessing.
 	s.sweeperWG.Add(1)
 	go func() {
@@ -123,8 +134,6 @@ func (s *traceConnector) Start(ctx context.Context, host component.Host) error {
 			}
 		}
 	}()
-
-	return nil
 }
 
 // Shutdown signals goroutines, waits for completion, drains remaining queues.
