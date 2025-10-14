@@ -148,17 +148,15 @@ func (s *metricConnector) processMessages() {
 
 		currentTime := time.Now()
 		waitingTimeNotExceeded := msg.receivedAt.Add(s.config.MaxCacheDuration).After(currentTime)
-		if jobState == JobStateNotFound && waitingTimeNotExceeded {
+		if jobState == JobStateNotFound && waitingTimeNotExceeded && s.started {
 			// Requeue non-blocking; if queue full, drop (avoid shutdown hang / deadlock)
+			// We don't need to use the waitingQueue, because we batch either way
+			// If the connector is shutdown we just process everything we have left
 			select {
 			case s.sharedCache.messageQueue <- msg:
 			default:
 				s.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("entityKey", msg.entityKey))
 			}
-			return
-		}
-		if !s.started {
-			// During shutdown we don't requeue; just drop
 			return
 		}
 
