@@ -131,6 +131,8 @@ func (m *metricConnector) processMessages() {
 		return
 	}
 
+	startTime := time.Now()
+
 	// drain the message queue to prevent infinite loop due to re-queuing
 	currentBatch := make([]*entityWorkItem, 0, len(m.sharedCache.messageQueue))
 	for len(m.sharedCache.messageQueue) > 0 {
@@ -169,6 +171,15 @@ func (m *metricConnector) processMessages() {
 		exemplar.SetTraceID(value.jobSpan.TraceID())
 		exemplar.SetSpanID(value.jobSpan.SpanID())
 	}
+
+	durationMetric := sm.Metrics().AppendEmpty()
+	durationMetric.SetName("dito.entity.processing_duration_ns")
+	gauge := durationMetric.SetEmptyGauge()
+
+	dp := gauge.DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetIntValue(int64(time.Since(startTime).Nanoseconds()))
 
 	m.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(m.sharedCache.messageQueue)))
 	err := m.metricConsumer.ConsumeMetrics(context.Background(), metrics)
