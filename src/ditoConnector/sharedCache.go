@@ -61,8 +61,6 @@ type sharedCache struct {
 	jobShards    []*jobCacheShard
 	shardCount   uint32
 	messageQueue chan *entityWorkItem
-	waitQueue    chan *entityWorkItem
-	outputQueue  chan *ptrace.Span
 }
 
 func newSharedCache(cfg *Config, logger *zap.Logger) *sharedCache {
@@ -86,8 +84,6 @@ func newSharedCache(cfg *Config, logger *zap.Logger) *sharedCache {
 		jobShards:    jobShards,
 		shardCount:   uint32(cfg.CacheShardCount),
 		messageQueue: make(chan *entityWorkItem, cfg.QueueSize),
-		waitQueue:    make(chan *entityWorkItem, cfg.QueueSize),
-		outputQueue:  make(chan *ptrace.Span, cfg.BatchSize*cfg.WorkerCount),
 	}
 }
 

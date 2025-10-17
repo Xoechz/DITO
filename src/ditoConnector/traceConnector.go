@@ -13,15 +13,21 @@ import (
 )
 
 type traceConnector struct {
-	logger          *zap.Logger
-	config          Config
-	traceConsumer   consumer.Traces
-	sharedCache     *sharedCache
-	shutdownChannel chan struct{}
-	workerWG        sync.WaitGroup
-	batchWG         sync.WaitGroup
-	sweeperWG       sync.WaitGroup
-	started         bool
+	logger                   *zap.Logger
+	config                   Config
+	traceConsumer            consumer.Traces
+	sharedCache              *sharedCache
+	shutdownChannel          chan struct{}
+	workerWG                 sync.WaitGroup
+	batchWG                  sync.WaitGroup
+	sweeperWG                sync.WaitGroup
+	started                  bool
+	waitQueue                chan *entityWorkItem
+	outputQueue              chan *ptrace.Span
+	internalOutputQueue      chan *ptrace.Span
+	currentRootSpan          *ptrace.Span
+	aggregateProcessDuration time.Duration
+	traceMu                  sync.Mutex
 }
 
 func (s *traceConnector) Capabilities() consumer.Capabilities {
@@ -33,11 +39,14 @@ func newTraceConnector(logger *zap.Logger, config component.Config, nextConsumer
 	cfg := config.(*Config)
 
 	return &traceConnector{
-		config:          *cfg,
-		logger:          logger,
-		traceConsumer:   nextConsumer,
-		sharedCache:     newSharedCache(cfg, logger),
-		shutdownChannel: make(chan struct{}),
+		config:              *cfg,
+		logger:              logger,
+		traceConsumer:       nextConsumer,
+		sharedCache:         newSharedCache(cfg, logger),
+		shutdownChannel:     make(chan struct{}),
+		waitQueue:           make(chan *entityWorkItem, cfg.QueueSize),
+		outputQueue:         make(chan *ptrace.Span, cfg.BatchSize*cfg.WorkerCount),
+		internalOutputQueue: make(chan *ptrace.Span, cfg.BatchSize),
 	}, nil
 }
 
@@ -93,7 +102,7 @@ func (s *traceConnector) startBatcher() {
 				s.flushOutput()
 			default:
 				// opportunistic flush when buffer big
-				if len(s.sharedCache.outputQueue) >= s.config.BatchSize {
+				if len(s.outputQueue)+len(s.internalOutputQueue) >= s.config.BatchSize {
 					s.flushOutput()
 				}
 				time.Sleep(10 * time.Millisecond) // small sleep to avoid busy loop
@@ -116,12 +125,12 @@ func (s *traceConnector) startSweeper() {
 			case <-sweepTicker.C:
 				s.sharedCache.sweep()
 
-				waitQueueBuffer := make([]*entityWorkItem, 0, len(s.sharedCache.waitQueue))
+				waitQueueBuffer := make([]*entityWorkItem, 0, len(s.waitQueue))
 
 				// Drain waitQueue into buffer
 				// This ensures we reprocess all waiting items, but avoid a live-lock in case waitQueue keeps getting new items.
-				for len(s.sharedCache.waitQueue) > 0 {
-					msg := <-s.sharedCache.waitQueue
+				for len(s.waitQueue) > 0 {
+					msg := <-s.waitQueue
 					if msg == nil {
 						continue
 					}
@@ -155,9 +164,26 @@ func (s *traceConnector) Shutdown(ctx context.Context) error {
 }
 
 func (s *traceConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	s.traceMu.Lock()
+	defer s.traceMu.Unlock()
+	s.startInternalTraceIfNotExists()
+
+	internalSpan := ptrace.NewSpan()
+	internalSpan.SetName("dito.traceConnector.ConsumeTraces")
+	internalSpan.SetTraceID(s.currentRootSpan.TraceID())
+	internalSpan.SetSpanID(generateSpanID())
+	internalSpan.SetParentSpanID(s.currentRootSpan.SpanID())
+	internalSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	internalSpan.SetKind(ptrace.SpanKindServer)
+
 	s.sharedCache.ingestTraces(td, &s.config)
 
-	s.logger.Debug("Traces ingested", zap.Int("messageQueueLength", len(s.sharedCache.messageQueue)), zap.Int("outputQueueLength", len(s.sharedCache.outputQueue)))
+	s.logger.Debug("Traces ingested", zap.Int("messageQueueLength", len(s.sharedCache.messageQueue)), zap.Int("outputQueueLength", len(s.outputQueue)))
+	internalSpan.Attributes().PutInt("dito.entity.pending", int64(len(s.sharedCache.messageQueue)))
+	internalSpan.Attributes().PutInt("dito.entity.ready", int64(len(s.outputQueue)))
+	internalSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	s.internalOutputQueue <- &internalSpan
 
 	return nil
 }
@@ -172,7 +198,7 @@ func (s *traceConnector) processMessage(msg *entityWorkItem) {
 		// Requeue non-blocking; if queue full, drop (avoid shutdown hang / deadlock)
 		// If the connector is shutdown we just process everything we have left
 		select {
-		case s.sharedCache.waitQueue <- msg:
+		case s.waitQueue <- msg:
 		default:
 			s.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("entityKey", msg.entityKey))
 		}
@@ -188,7 +214,7 @@ func (s *traceConnector) processMessage(msg *entityWorkItem) {
 		rootSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(currentTime))
 		rootSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(currentTime))
 
-		s.sharedCache.outputQueue <- &rootSpan
+		s.outputQueue <- &rootSpan
 	}
 
 	// drop the span if the status is not an error and sampling says so
@@ -215,7 +241,7 @@ func (s *traceConnector) processMessage(msg *entityWorkItem) {
 		jobSpan.SetSpanID(newJobSpanId)
 		jobSpan.SetParentSpanID(cache.rootSpanId)
 
-		s.sharedCache.outputQueue <- jobSpan
+		s.outputQueue <- jobSpan
 	}
 
 	newSpanId := generateSpanID()
@@ -230,31 +256,78 @@ func (s *traceConnector) processMessage(msg *entityWorkItem) {
 	eLink.SetTraceID(msg.span.TraceID())
 	eLink.SetSpanID(msg.span.SpanID())
 
-	s.sharedCache.outputQueue <- &es
+	s.aggregateProcessDuration += time.Since(currentTime)
+
+	s.outputQueue <- &es
 }
 
 func (s *traceConnector) flushOutput() {
-	if len(s.sharedCache.outputQueue) == 0 {
+	if len(s.outputQueue) == 0 && len(s.internalOutputQueue) < s.config.BatchSize {
 		return
 	}
 
+	s.traceMu.Lock()
+	defer s.traceMu.Unlock()
+	s.startInternalTraceIfNotExists()
+
+	internalSpan := ptrace.NewSpan()
+	internalSpan.SetName("dito.traceConnector.flushOutput")
+	internalSpan.SetTraceID(s.currentRootSpan.TraceID())
+	internalSpan.SetSpanID(generateSpanID())
+	internalSpan.SetParentSpanID(s.currentRootSpan.SpanID())
+	internalSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	internalSpan.Attributes().PutInt("dito.entity.ready", int64(len(s.outputQueue)))
+
 	batch := ptrace.NewTraces()
 	rs := batch.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().EnsureCapacity(3)
 	rs.Resource().Attributes().PutStr("service.name", SERVICE_NAME)
-	rs.Resource().Attributes().PutInt("dito.entity.pending", int64(len(s.sharedCache.messageQueue)))
 	scopeSpan := rs.ScopeSpans().AppendEmpty()
 	scopeSpan.Scope().SetName(SERVICE_NAME)
-	scopeSpan.Spans().EnsureCapacity(len(s.sharedCache.outputQueue))
+	scopeSpan.Spans().EnsureCapacity(len(s.outputQueue))
 
-	for len(s.sharedCache.outputQueue) > 0 {
-		span := <-s.sharedCache.outputQueue
+	counter := 0
+	for len(s.outputQueue) > 0 {
+		span := <-s.outputQueue
+		span.CopyTo(scopeSpan.Spans().AppendEmpty())
+		counter++
+	}
+
+	for len(s.internalOutputQueue) > 0 {
+		span := <-s.internalOutputQueue
 		span.CopyTo(scopeSpan.Spans().AppendEmpty())
 	}
+
+	internalSpan.Attributes().PutInt("dito.entity.flushed", int64(counter))
+	internalSpan.Attributes().PutInt("dito.entity.pending", int64(len(s.sharedCache.messageQueue)))
+
+	internalRootSpan := scopeSpan.Spans().AppendEmpty()
+	s.currentRootSpan.CopyTo(internalRootSpan)
+	s.currentRootSpan = nil
+
+	endTime := time.Now()
+	internalSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+	internalRootSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+	internalRootSpan.Attributes().PutInt("dito.aggregate_process_duration_ns", s.aggregateProcessDuration.Nanoseconds())
+	internalSpan.CopyTo(scopeSpan.Spans().AppendEmpty())
 
 	s.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(s.sharedCache.messageQueue)))
 	err := s.traceConsumer.ConsumeTraces(context.Background(), batch)
 	if err != nil {
 		s.logger.Error("Error sending traces to next consumer", zap.Error(err))
 	}
+}
+
+func (t *traceConnector) startInternalTraceIfNotExists() {
+	if t.currentRootSpan != nil {
+		return
+	}
+
+	internalRootSpan := ptrace.NewSpan()
+	internalRootSpan.SetName("dito.traceConnector")
+	internalRootSpan.SetTraceID(generateTraceID())
+	internalRootSpan.SetSpanID(generateSpanID())
+	internalRootSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	t.currentRootSpan = &internalRootSpan
+	t.aggregateProcessDuration = 0
 }

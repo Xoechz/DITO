@@ -17,9 +17,8 @@ import (
 const (
 	ENTITY_KEY_VALUE   = "dito.key"
 	JOB_KEY_VALUE      = "dito.job_id"
-	BATCH_TIMEOUT      = 100 * time.Millisecond
-	MAX_CACHE_DURATION = 300 * time.Millisecond
-	TEST_WAIT          = 750 * time.Millisecond
+	MAX_CACHE_DURATION = 20 * time.Millisecond
+	TEST_WAIT          = 100 * time.Millisecond
 )
 
 func (sc *sharedCache) reset() {
@@ -39,14 +38,24 @@ func (sc *sharedCache) reset() {
 	for len(sc.messageQueue) > 0 {
 		<-sc.messageQueue
 	}
+}
 
-	for len(sc.waitQueue) > 0 {
-		<-sc.waitQueue
+func (t *traceConnector) reset() {
+	for len(t.waitQueue) > 0 {
+		<-t.waitQueue
 	}
 
-	for len(sc.outputQueue) > 0 {
-		<-sc.outputQueue
+	for len(t.outputQueue) > 0 {
+		<-t.outputQueue
 	}
+
+	for len(t.internalOutputQueue) > 0 {
+		<-t.internalOutputQueue
+	}
+
+	t.currentRootSpan = nil
+
+	t.sharedCache.reset()
 }
 
 func TestTracesConnector(t *testing.T) {
@@ -54,7 +63,6 @@ func TestTracesConnector(t *testing.T) {
 	tracesConsumer := &consumertest.TracesSink{}
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.BatchTimeout = BATCH_TIMEOUT
 	cfg.MaxCacheDuration = MAX_CACHE_DURATION
 
 	connector, err := newTraceConnector(zap.NewNop(), cfg, tracesConsumer)
@@ -67,7 +75,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("no entity spans", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -80,7 +88,8 @@ func TestTracesConnector(t *testing.T) {
 		// act
 		err := connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		outputTraces := tracesConsumer.AllTraces()
@@ -90,7 +99,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("one entity span one job span", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -110,15 +119,17 @@ func TestTracesConnector(t *testing.T) {
 		// act
 		err := connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
 
 		require.NotNil(t, spanTrees)
-		assert.Len(t, spanTrees, 1)
+		assert.Len(t, spanTrees, 2)
 		assert.Len(t, spanTrees[0].children, 1)
 		assert.Len(t, spanTrees[0].children[0].children, 1)
+		assert.Len(t, spanTrees[1].children, 2)
 
 		rootSpan := spanTrees[0].span
 		jobSpan := spanTrees[0].children[0].span
@@ -143,7 +154,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("two same entity spans one job span", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -169,15 +180,17 @@ func TestTracesConnector(t *testing.T) {
 		// act
 		err := connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
 
 		require.NotNil(t, spanTrees)
-		assert.Len(t, spanTrees, 1)
+		assert.Len(t, spanTrees, 2)
 		assert.Len(t, spanTrees[0].children, 1)
 		assert.Len(t, spanTrees[0].children[0].children, 2)
+		assert.Len(t, spanTrees[1].children, 2)
 
 		rootSpan := spanTrees[0].span
 		jobSpan := spanTrees[0].children[0].span
@@ -210,7 +223,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("two different entity spans one job span", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -236,16 +249,18 @@ func TestTracesConnector(t *testing.T) {
 		// act
 		err := connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
 
-		assert.Len(t, spanTrees, 2)
+		assert.Len(t, spanTrees, 3)
 		assert.Len(t, spanTrees[0].children, 1)
 		assert.Len(t, spanTrees[1].children, 1)
 		assert.Len(t, spanTrees[0].children[0].children, 1)
 		assert.Len(t, spanTrees[1].children[0].children, 1)
+		assert.Len(t, spanTrees[2].children, 2)
 
 		jobSpan1 := spanTrees[0].children[0].span
 		jobSpan2 := spanTrees[1].children[0].span
@@ -269,7 +284,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("two same entity spans two job spans", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -300,15 +315,17 @@ func TestTracesConnector(t *testing.T) {
 		// act
 		err := connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
 
-		assert.Len(t, spanTrees, 1)
+		assert.Len(t, spanTrees, 2)
 		assert.Len(t, spanTrees[0].children, 2)
 		assert.Len(t, spanTrees[0].children[0].children, 1)
 		assert.Len(t, spanTrees[0].children[1].children, 1)
+		assert.Len(t, spanTrees[1].children, 2)
 
 		jobSpan1 := spanTrees[0].children[0].span
 		jobSpan2 := spanTrees[0].children[1].span
@@ -331,7 +348,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("two different entity spans two job spans", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -362,16 +379,18 @@ func TestTracesConnector(t *testing.T) {
 		// act
 		err := connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
 
-		assert.Len(t, spanTrees, 2)
+		assert.Len(t, spanTrees, 3)
 		assert.Len(t, spanTrees[0].children, 1)
 		assert.Len(t, spanTrees[1].children, 1)
 		assert.Len(t, spanTrees[0].children[0].children, 1)
 		assert.Len(t, spanTrees[1].children[0].children, 1)
+		assert.Len(t, spanTrees[2].children, 2)
 
 		jobSpan1 := spanTrees[0].children[0].span
 		jobSpan2 := spanTrees[1].children[0].span
@@ -394,7 +413,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("one entity span one job span split", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 
 		traces1 := ptrace.NewTraces()
 		inputResourceSpan1 := traces1.ResourceSpans().AppendEmpty()
@@ -420,15 +439,17 @@ func TestTracesConnector(t *testing.T) {
 		require.NoError(t, err)
 		err = connector.ConsumeTraces(ctx, traces2)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
 
 		require.NotNil(t, spanTrees)
-		assert.Len(t, spanTrees, 1)
+		assert.Len(t, spanTrees, 2)
 		assert.Len(t, spanTrees[0].children, 1)
 		assert.Len(t, spanTrees[0].children[0].children, 1)
+		assert.Len(t, spanTrees[1].children, 3)
 
 		rootSpan := spanTrees[0].span
 		jobSpan := spanTrees[0].children[0].span
@@ -453,7 +474,7 @@ func TestTracesConnector(t *testing.T) {
 	t.Run("different entities sampling", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -472,24 +493,27 @@ func TestTracesConnector(t *testing.T) {
 		// act
 		err = connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
 
 		require.NotNil(t, spanTrees)
-		assert.Len(t, spanTrees, 100)
+		require.Len(t, spanTrees, 101)
 
-		for _, rootSpan := range spanTrees {
-			assert.Len(t, rootSpan.children, 1)
-			assert.Len(t, rootSpan.children[0].children, 1)
+		assert.Len(t, spanTrees[100].children, 2)
+
+		for i := range 100 {
+			assert.Len(t, spanTrees[i].children, 1)
+			assert.Len(t, spanTrees[i].children[0].children, 1)
 		}
 	})
 
 	t.Run("same entities sampling with fraction 2", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 		beforeFraction := connector.config.SamplingFraction
 		defer func() { connector.config.SamplingFraction = beforeFraction }()
 		connector.config.SamplingFraction = 2
@@ -511,21 +535,23 @@ func TestTracesConnector(t *testing.T) {
 		// act
 		err = connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
 
 		require.NotNil(t, spanTrees)
-		assert.Len(t, spanTrees, 1)
+		assert.Len(t, spanTrees, 2)
 		assert.Len(t, spanTrees[0].children, 1)
 		assert.Len(t, spanTrees[0].children[0].children, 50)
+		assert.Len(t, spanTrees[1].children, 2)
 	})
 
 	t.Run("same entities sampling with fraction 7", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 		beforeFraction := connector.config.SamplingFraction
 		defer func() { connector.config.SamplingFraction = beforeFraction }()
 		connector.config.SamplingFraction = 7
@@ -547,21 +573,23 @@ func TestTracesConnector(t *testing.T) {
 		// act
 		err = connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
 
 		require.NotNil(t, spanTrees)
-		assert.Len(t, spanTrees, 1)
+		assert.Len(t, spanTrees, 2)
 		assert.Len(t, spanTrees[0].children, 1)
 		assert.Len(t, spanTrees[0].children[0].children, 15)
+		assert.Len(t, spanTrees[1].children, 2)
 	})
 
 	t.Run("one entity span one distant job span", func(t *testing.T) {
 		// arrange
 		tracesConsumer.Reset()
-		connector.sharedCache.reset()
+		connector.reset()
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -593,15 +621,17 @@ func TestTracesConnector(t *testing.T) {
 		// act
 		err := connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
-		time.Sleep(TEST_WAIT) // allow worker to process
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
 
 		// assert
 		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
 
 		require.NotNil(t, spanTrees)
-		assert.Len(t, spanTrees, 1)
+		assert.Len(t, spanTrees, 2)
 		assert.Len(t, spanTrees[0].children, 1)
 		assert.Len(t, spanTrees[0].children[0].children, 1)
+		assert.Len(t, spanTrees[1].children, 2)
 
 		rootSpan := spanTrees[0].span
 		jobSpan := spanTrees[0].children[0].span
@@ -630,7 +660,7 @@ func TestMetricsConnector(t *testing.T) {
 	// Create a test consumer that captures metrics
 	metricsConsumer := &consumertest.MetricsSink{}
 	cfg := createDefaultConfig().(*Config)
-	cfg.BatchTimeout = BATCH_TIMEOUT
+	cfg.BatchTimeout = 100 * time.Millisecond
 	cfg.MaxCacheDuration = MAX_CACHE_DURATION
 
 	connector, err := newMetricConnector(zap.NewNop(), cfg, metricsConsumer)
@@ -644,6 +674,7 @@ func TestMetricsConnector(t *testing.T) {
 	t.Run("no entity spans", func(t *testing.T) {
 		// arrange
 		metricsConsumer.Reset()
+		connector.sharedCache.reset()
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -666,6 +697,7 @@ func TestMetricsConnector(t *testing.T) {
 	t.Run("grouped metrics", func(t *testing.T) {
 		// arrange
 		metricsConsumer.Reset()
+		connector.sharedCache.reset()
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()

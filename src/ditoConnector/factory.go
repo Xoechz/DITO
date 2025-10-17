@@ -24,7 +24,7 @@ func createDefaultConfig() component.Config {
 		QueueSize:        10000,
 		WorkerCount:      4,
 		BatchSize:        256,
-		BatchTimeout:     2 * time.Second,
+		BatchTimeout:     time.Minute,
 	}
 }
 

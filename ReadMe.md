@@ -52,7 +52,7 @@ The following configs are available:
   - Default: 256
 - `batch_timeout`
   - The maximum duration to wait before processing a batch.
-  - Default: 2s
+  - Default: 1m
 
 ### Example
 
@@ -68,7 +68,7 @@ connectors:
     worker_count: 4
     sampling_fraction: 1
     batch_size: 256
-    batch_timeout: 2s
+    batch_timeout: 1m
 service:
   pipelines:
     traces/default:
