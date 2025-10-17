@@ -34,7 +34,7 @@ type metricConnector struct {
 	started         bool
 }
 
-func (s *metricConnector) Capabilities() consumer.Capabilities {
+func (m *metricConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -52,30 +52,30 @@ func newMetricConnector(logger *zap.Logger, config component.Config, nextConsume
 }
 
 // Start launches worker and sweeper goroutines.
-func (s *metricConnector) Start(ctx context.Context, host component.Host) error {
-	if s.started {
+func (m *metricConnector) Start(ctx context.Context, host component.Host) error {
+	if m.started {
 		return nil
 	}
-	s.started = true
+	m.started = true
 
-	s.logger.Info("Starting dito metric connector")
+	m.logger.Info("Starting dito metric connector")
 
-	s.workerWG.Add(1)
+	m.workerWG.Add(1)
 	go func() {
-		defer s.workerWG.Done()
-		ticker := time.NewTicker(s.config.BatchTimeout)
+		defer m.workerWG.Done()
+		ticker := time.NewTicker(m.config.BatchTimeout)
 		defer ticker.Stop()
 		for {
 			select {
-			case <-s.shutdownChannel:
-				s.processMessages() // final flush
+			case <-m.shutdownChannel:
+				m.processMessages() // final flush
 				return
 			case <-ticker.C:
-				s.processMessages()
+				m.processMessages()
 			default:
 				// opportunistic flush when buffer big
-				if len(s.sharedCache.messageQueue) >= s.config.BatchSize {
-					s.processMessages()
+				if len(m.sharedCache.messageQueue) >= m.config.BatchSize {
+					m.processMessages()
 				}
 				time.Sleep(10 * time.Millisecond) // small sleep to avoid busy loop
 			}
@@ -83,17 +83,17 @@ func (s *metricConnector) Start(ctx context.Context, host component.Host) error 
 	}()
 
 	// Sweeper periodic eviction.
-	s.sweeperWG.Add(1)
+	m.sweeperWG.Add(1)
 	go func() {
-		defer s.sweeperWG.Done()
-		sweepTicker := time.NewTicker(s.config.MaxCacheDuration / 2)
+		defer m.sweeperWG.Done()
+		sweepTicker := time.NewTicker(m.config.MaxCacheDuration / 2)
 		defer sweepTicker.Stop()
 		for {
 			select {
-			case <-s.shutdownChannel:
+			case <-m.shutdownChannel:
 				return
 			case <-sweepTicker.C:
-				s.sharedCache.sweep()
+				m.sharedCache.sweep()
 			}
 		}
 	}()
@@ -102,49 +102,49 @@ func (s *metricConnector) Start(ctx context.Context, host component.Host) error 
 }
 
 // Shutdown signals goroutines, waits for completion, drains remaining queues.
-func (s *metricConnector) Shutdown(ctx context.Context) error {
-	if !s.started {
+func (m *metricConnector) Shutdown(ctx context.Context) error {
+	if !m.started {
 		return nil
 	}
 
-	s.logger.Info("Shutting down dito metric connector")
+	m.logger.Info("Shutting down dito metric connector")
 
-	close(s.shutdownChannel)
-	s.started = false
-	s.workerWG.Wait()
-	s.sweeperWG.Wait()
+	close(m.shutdownChannel)
+	m.started = false
+	m.workerWG.Wait()
+	m.sweeperWG.Wait()
 	// Drain leftover output (best-effort)
-	s.processMessages()
+	m.processMessages()
 	return nil
 }
 
-func (s *metricConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	s.sharedCache.ingestTraces(td, &s.config)
+func (m *metricConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	m.sharedCache.ingestTraces(td, &m.config)
 
-	s.logger.Debug("Metrics ingested", zap.Int("messageQueueLength", len(s.sharedCache.messageQueue)))
+	m.logger.Debug("Metrics ingested", zap.Int("messageQueueLength", len(m.sharedCache.messageQueue)))
 
 	return nil
 }
 
-func (s *metricConnector) processMessages() {
-	if len(s.sharedCache.messageQueue) == 0 {
+func (m *metricConnector) processMessages() {
+	if len(m.sharedCache.messageQueue) == 0 {
 		return
 	}
 
 	// drain the message queue to prevent infinite loop due to re-queuing
-	currentBatch := make([]*entityWorkItem, 0, len(s.sharedCache.messageQueue))
-	for len(s.sharedCache.messageQueue) > 0 {
-		msg := <-s.sharedCache.messageQueue
+	currentBatch := make([]*entityWorkItem, 0, len(m.sharedCache.messageQueue))
+	for len(m.sharedCache.messageQueue) > 0 {
+		msg := <-m.sharedCache.messageQueue
 		currentBatch = append(currentBatch, msg)
 	}
 
-	metricGroups, minTime, maxTime := s.getMetricGroups(currentBatch)
+	metricGroups, minTime, maxTime := m.getMetricGroups(currentBatch)
 
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().EnsureCapacity(3)
 	rm.Resource().Attributes().PutStr("service.name", SERVICE_NAME)
-	rm.Resource().Attributes().PutInt("dito.entity.pending", int64(len(s.sharedCache.messageQueue)))
+	rm.Resource().Attributes().PutInt("dito.entity.pending", int64(len(m.sharedCache.messageQueue)))
 
 	sm := rm.ScopeMetrics().AppendEmpty()
 	sm.Scope().SetName(SERVICE_NAME)
@@ -170,32 +170,32 @@ func (s *metricConnector) processMessages() {
 		exemplar.SetSpanID(value.jobSpan.SpanID())
 	}
 
-	s.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(s.sharedCache.messageQueue)))
-	err := s.metricConsumer.ConsumeMetrics(context.Background(), metrics)
+	m.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(m.sharedCache.messageQueue)))
+	err := m.metricConsumer.ConsumeMetrics(context.Background(), metrics)
 	if err != nil {
-		s.logger.Error("Error sending metrics to next consumer", zap.Error(err))
+		m.logger.Error("Error sending metrics to next consumer", zap.Error(err))
 	}
 }
 
-func (s *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[metricGroup]metricValue, pcommon.Timestamp, pcommon.Timestamp) {
+func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[metricGroup]metricValue, pcommon.Timestamp, pcommon.Timestamp) {
 	metricGroups := make(map[metricGroup]metricValue)
 	minTime := currentBatch[0].span.StartTimestamp()
 	maxTime := currentBatch[0].span.EndTimestamp()
 
 	for _, msg := range currentBatch {
 		// check if job span exists, if not wait for the job span(for a max duration)
-		jobSpan, _, jobState := s.sharedCache.getJobSpan(&msg.span, msg.entityKey)
+		jobSpan, _, jobState := m.sharedCache.getJobSpan(&msg.span, msg.entityKey)
 
 		currentTime := time.Now()
-		waitingTimeNotExceeded := msg.receivedAt.Add(s.config.MaxCacheDuration).After(currentTime)
-		if jobState == JobStateNotFound && waitingTimeNotExceeded && s.started {
+		waitingTimeNotExceeded := msg.receivedAt.Add(m.config.MaxCacheDuration).After(currentTime)
+		if jobState == JobStateNotFound && waitingTimeNotExceeded && m.started {
 			// Requeue non-blocking; if queue full, drop (avoid shutdown hang / deadlock)
 			// We don't need to use the waitingQueue, because we batch either way
 			// If the connector is shutdown we just process everything we have left
 			select {
-			case s.sharedCache.messageQueue <- msg:
+			case m.sharedCache.messageQueue <- msg:
 			default:
-				s.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("entityKey", msg.entityKey))
+				m.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("entityKey", msg.entityKey))
 			}
 			continue
 		}
