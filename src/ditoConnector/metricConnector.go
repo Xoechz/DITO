@@ -173,7 +173,7 @@ func (m *metricConnector) processMessages() {
 	}
 
 	durationMetric := sm.Metrics().AppendEmpty()
-	durationMetric.SetName("dito.entity.processing_duration_ns")
+	durationMetric.SetName("dito.entity.process_duration_ns")
 	gauge := durationMetric.SetEmptyGauge()
 
 	dp := gauge.DataPoints().AppendEmpty()

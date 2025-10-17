@@ -769,7 +769,7 @@ func TestMetricsConnector(t *testing.T) {
 		outputMetrics := outputScopeMetrics.At(0).Metrics()
 		assert.Equal(t, 2, outputMetrics.Len())
 		assert.Equal(t, "dito.entity.count", outputMetrics.At(0).Name())
-		assert.Equal(t, "dito.entity.processing_duration_ns", outputMetrics.At(1).Name())
+		assert.Equal(t, "dito.entity.process_duration_ns", outputMetrics.At(1).Name())
 
 		dataPoints := outputMetrics.At(0).Sum().DataPoints()
 		assert.Equal(t, 3, dataPoints.Len())
