@@ -19,10 +19,17 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version-file: src/ditoConnector/go.mod
+        cache: true
+        cache-dependency-path: |
+          **/go.mod
+          **/go.sum
+
     - name: Build
       run: cd src && ./ocb --config builder-config.yaml
+
     - name: Test
       run: cd src/ditoConnector && go test -v -coverprofile=coverage.out -covermode=count -json > report.json
+      
     - name: SonarQube Scan
       uses: SonarSource/sonarqube-scan-action@v6
       env:
