@@ -10,7 +10,6 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
@@ -20,9 +19,11 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version-file: src/ditoConnector/go.mod
-
     - name: Build
       run: cd src && ./ocb --config builder-config.yaml
-
     - name: Test
-      run: cd src/ditoConnector && go test -v --cover
+      run: cd src/ditoConnector && go test -coverprofile=coverage.out -covermode=count -json > report.json
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v6
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

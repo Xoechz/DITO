@@ -1,4 +1,11 @@
-# DITO - Work in Progress
+# DITO
+
+[![Go](https://github.com/Xoechz/DITO/actions/workflows/go.yml/badge.svg)](https://github.com/Xoechz/DITO/actions/workflows/go.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Xoechz_DITO&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Xoechz_DITO)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Xoechz_DITO&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Xoechz_DITO)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Xoechz_DITO&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=Xoechz_DITO)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Xoechz_DITO&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Xoechz_DITO)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=Xoechz_DITO&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=Xoechz_DITO)
 
 ![DITO](./logo.svg)
 
@@ -90,7 +97,7 @@ Sadly a connector can only have one entry point and one output point. So there w
 
 This diagram shows the architecture of the connector, as shown in the example configuration.
 
-:::mermaid
+```mermaid
 flowchart LR
 subgraph "default traces pipeline"
 dr[otlp receiver]
@@ -131,7 +138,7 @@ tp --> tf;
 
 tf --> te;
 mp ---> me;
-:::
+```
 
 ### Sequence Diagram
 
@@ -193,7 +200,7 @@ The following data is incomming(simplified):
 }
 ```
 
-:::mermaid
+```mermaid
 sequenceDiagram
 box default traces pipeline
 participant dr as otlp receiver
@@ -251,3 +258,4 @@ t1->>to: Enqueue result entity span 20 in root b
 t2->>to: Enqueue result entity span 30 in root a
 to->>tf: flushOutput
 tf->>te: Send flushed spans in a traces object
+```
