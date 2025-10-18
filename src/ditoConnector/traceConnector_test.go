@@ -13,11 +13,9 @@ import (
 )
 
 func TestTraceConnectorCapabilities(t *testing.T) {
-	t.Run("dito traces connector capabilities", func(t *testing.T) {
-		connector := &traceConnector{}
-		capabilities := connector.Capabilities()
-		assert.False(t, capabilities.MutatesData)
-	})
+	connector := &traceConnector{}
+	capabilities := connector.Capabilities()
+	assert.False(t, capabilities.MutatesData)
 }
 func TestTracesConnector(t *testing.T) {
 	// Create a test consumer that captures traces

@@ -13,11 +13,9 @@ import (
 )
 
 func TestMetricConnectorCapabilities(t *testing.T) {
-	t.Run("dito metrics connector capabilities", func(t *testing.T) {
-		connector := &metricConnector{}
-		capabilities := connector.Capabilities()
-		assert.False(t, capabilities.MutatesData)
-	})
+	connector := &metricConnector{}
+	capabilities := connector.Capabilities()
+	assert.False(t, capabilities.MutatesData)
 }
 
 func TestMetricsConnector(t *testing.T) {
