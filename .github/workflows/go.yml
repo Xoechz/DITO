@@ -22,7 +22,7 @@ jobs:
     - name: Build
       run: cd src && ./ocb --config builder-config.yaml
     - name: Test
-      run: cd src/ditoConnector && go test -coverprofile=coverage.out -covermode=count -json > report.json
+      run: cd src/ditoConnector && go test -v -coverprofile=coverage.out -covermode=count -json > report.json
     - name: SonarQube Scan
       uses: SonarSource/sonarqube-scan-action@v6
       env:
