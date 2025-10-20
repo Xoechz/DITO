@@ -18,23 +18,12 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 	assert.False(t, capabilities.MutatesData)
 }
 func TestTracesConnector(t *testing.T) {
-	// Create a test consumer that captures traces
-	tracesConsumer := &consumertest.TracesSink{}
-
-	cfg := createDefaultConfig().(*Config)
-	cfg.MaxCacheDuration = MAX_CACHE_DURATION
-
-	connector, err := newTraceConnector(zap.NewNop(), cfg, tracesConsumer)
-	require.NoError(t, err)
 	ctx := context.Background()
-
-	err = connector.Start(ctx, nil)
-	require.NoError(t, err)
 
 	t.Run("no entity spans", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -55,10 +44,55 @@ func TestTracesConnector(t *testing.T) {
 		assert.Equal(t, 0, len(outputTraces))
 	})
 
+	t.Run("one entity span no job span", func(t *testing.T) {
+		// arrange
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
+		connector.config.BatchTimeout = 10 * time.Millisecond
+
+		traces := ptrace.NewTraces()
+		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
+		inputScopeSpan := inputResourceSpan.ScopeSpans().AppendEmpty()
+		inputSpan := inputScopeSpan.Spans().AppendEmpty()
+
+		inputSpan.SetSpanID(generateSpanID())
+		inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
+		inputSpan.Attributes().PutStr("test.key", "test.value")
+
+		// act
+		err := connector.ConsumeTraces(ctx, traces)
+		require.NoError(t, err)
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
+
+		// assert
+		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
+
+		require.NotNil(t, spanTrees)
+		assert.Len(t, spanTrees, 2)
+		assert.Len(t, spanTrees[0].children, 1)
+		assert.Len(t, spanTrees[0].children[0].children, 0)
+		assert.Len(t, spanTrees[1].children, 2)
+
+		rootSpan := spanTrees[0].span
+		entitySpan := spanTrees[0].children[0].span
+
+		assertAllUnequal(t, []any{rootSpan.ParentSpanID(), entitySpan.ParentSpanID()})
+		assert.True(t, rootSpan.ParentSpanID().IsEmpty())
+		assert.Equal(t, rootSpan.SpanID(), entitySpan.ParentSpanID())
+
+		actualKey, actualKeyExists := entitySpan.Attributes().Get(ENTITY_KEY_VALUE)
+		actualTest, actualTestExists := entitySpan.Attributes().Get("test.key")
+		assert.True(t, actualKeyExists)
+		assert.True(t, actualTestExists)
+		assert.Equal(t, "1", actualKey.AsString())
+		assert.Equal(t, "test.value", actualTest.AsString())
+	})
+
 	t.Run("one entity span one job span", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -112,8 +146,8 @@ func TestTracesConnector(t *testing.T) {
 
 	t.Run("two same entity spans one job span", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -181,8 +215,8 @@ func TestTracesConnector(t *testing.T) {
 
 	t.Run("two different entity spans one job span", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -242,8 +276,8 @@ func TestTracesConnector(t *testing.T) {
 
 	t.Run("two same entity spans two job spans", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -306,8 +340,8 @@ func TestTracesConnector(t *testing.T) {
 
 	t.Run("two different entity spans two job spans", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -371,8 +405,8 @@ func TestTracesConnector(t *testing.T) {
 
 	t.Run("one entity span one job span split", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces1 := ptrace.NewTraces()
 		inputResourceSpan1 := traces1.ResourceSpans().AppendEmpty()
@@ -432,8 +466,8 @@ func TestTracesConnector(t *testing.T) {
 
 	t.Run("different entities sampling", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -450,7 +484,7 @@ func TestTracesConnector(t *testing.T) {
 		}
 
 		// act
-		err = connector.ConsumeTraces(ctx, traces)
+		err := connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
 		time.Sleep(TEST_WAIT)   // allow worker to process
 		connector.flushOutput() // ensure all spans are flushed
@@ -471,10 +505,8 @@ func TestTracesConnector(t *testing.T) {
 
 	t.Run("same entities sampling with fraction 2", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
-		beforeFraction := connector.config.SamplingFraction
-		defer func() { connector.config.SamplingFraction = beforeFraction }()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 		connector.config.SamplingFraction = 2
 
 		traces := ptrace.NewTraces()
@@ -492,7 +524,7 @@ func TestTracesConnector(t *testing.T) {
 		}
 
 		// act
-		err = connector.ConsumeTraces(ctx, traces)
+		err := connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
 		time.Sleep(TEST_WAIT)   // allow worker to process
 		connector.flushOutput() // ensure all spans are flushed
@@ -509,10 +541,8 @@ func TestTracesConnector(t *testing.T) {
 
 	t.Run("same entities sampling with fraction 7", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
-		beforeFraction := connector.config.SamplingFraction
-		defer func() { connector.config.SamplingFraction = beforeFraction }()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 		connector.config.SamplingFraction = 7
 
 		traces := ptrace.NewTraces()
@@ -530,7 +560,7 @@ func TestTracesConnector(t *testing.T) {
 		}
 
 		// act
-		err = connector.ConsumeTraces(ctx, traces)
+		err := connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
 		time.Sleep(TEST_WAIT)   // allow worker to process
 		connector.flushOutput() // ensure all spans are flushed
@@ -547,8 +577,8 @@ func TestTracesConnector(t *testing.T) {
 
 	t.Run("one entity span one distant job span", func(t *testing.T) {
 		// arrange
-		tracesConsumer.Reset()
-		connector.reset()
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -611,6 +641,20 @@ func TestTracesConnector(t *testing.T) {
 		assert.Equal(t, "1", actualKey.AsString())
 		assert.Equal(t, "test.value", actualTest.AsString())
 	})
+}
 
-	connector.Shutdown(ctx)
+func getReadyConnectorForTest(t *testing.T, ctx context.Context) (*traceConnector, *consumertest.TracesSink) {
+	// Create a test consumer that captures traces
+	tracesConsumer := &consumertest.TracesSink{}
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaxCacheDuration = MAX_CACHE_DURATION
+
+	connector, err := newTraceConnector(zap.NewNop(), cfg, tracesConsumer)
+	require.NoError(t, err)
+
+	err = connector.Start(ctx, nil)
+	require.NoError(t, err)
+
+	return connector, tracesConsumer
 }

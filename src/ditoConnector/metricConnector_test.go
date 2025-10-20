@@ -19,24 +19,12 @@ func TestMetricConnectorCapabilities(t *testing.T) {
 }
 
 func TestMetricsConnector(t *testing.T) {
-	// Create a test consumer that captures metrics
-	metricsConsumer := &consumertest.MetricsSink{}
-	cfg := createDefaultConfig().(*Config)
-	cfg.BatchTimeout = 100 * time.Millisecond
-	cfg.MaxCacheDuration = MAX_CACHE_DURATION
-
-	connector, err := newMetricConnector(zap.NewNop(), cfg, metricsConsumer)
-	require.NoError(t, err)
-
 	ctx := context.Background()
-
-	err = connector.Start(ctx, nil)
-	require.NoError(t, err)
 
 	t.Run("no entity spans", func(t *testing.T) {
 		// arrange
-		metricsConsumer.Reset()
-		connector.sharedCache.reset()
+		connector, metricsConsumer := getReadyMetricConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -58,8 +46,8 @@ func TestMetricsConnector(t *testing.T) {
 
 	t.Run("grouped metrics", func(t *testing.T) {
 		// arrange
-		metricsConsumer.Reset()
-		connector.sharedCache.reset()
+		connector, metricsConsumer := getReadyMetricConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
 		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -163,6 +151,21 @@ func TestMetricsConnector(t *testing.T) {
 		assert.True(t, okJob1MetricFound)
 		assert.True(t, okJob2MetricFound)
 	})
+}
 
-	connector.Shutdown(ctx)
+func getReadyMetricConnectorForTest(t *testing.T, ctx context.Context) (*metricConnector, *consumertest.MetricsSink) {
+	// Create a test consumer that captures metrics
+	metricsConsumer := &consumertest.MetricsSink{}
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaxCacheDuration = MAX_CACHE_DURATION
+	cfg.BatchTimeout = 100 * time.Millisecond
+
+	connector, err := newMetricConnector(zap.NewNop(), cfg, metricsConsumer)
+	require.NoError(t, err)
+
+	err = connector.Start(ctx, nil)
+	require.NoError(t, err)
+
+	return connector, metricsConsumer
 }

@@ -19,6 +19,9 @@
             delve
             golangci-lint
           ];
+          # For test debugging, disable CGO security features
+          # CGO_CPPFLAGS = "-U_FORTIFY_SOURCE";
+          # CGO_CFLAGS = "-Wno-error";
         };
       };
   };

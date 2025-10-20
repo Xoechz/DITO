@@ -116,15 +116,17 @@ func (t *traceConnector) startSweeper() {
 	t.sweeperWG.Add(1)
 	go func() {
 		defer t.sweeperWG.Done()
-		sweepTicker := time.NewTicker(time.Second * 10)
+		sweepTicker := time.NewTicker(t.config.MaxCacheDuration / 2)
+		requeueTicker := time.NewTicker(t.config.BatchTimeout)
 		defer sweepTicker.Stop()
+		defer requeueTicker.Stop()
 		for {
 			select {
 			case <-t.shutdownChannel:
 				return
 			case <-sweepTicker.C:
 				t.sharedCache.sweep()
-
+			case <-requeueTicker.C:
 				waitQueueBuffer := make([]*entityWorkItem, 0, len(t.waitQueue))
 
 				// Drain waitQueue into buffer
