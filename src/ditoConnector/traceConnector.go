@@ -213,6 +213,7 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 		rootSpan.SetName(msg.entityKey)
 		rootSpan.SetTraceID(cache.traceId)
 		rootSpan.SetSpanID(cache.rootSpanId)
+		rootSpan.SetKind(ptrace.SpanKindServer)
 		rootSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(currentTime))
 		rootSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(currentTime))
 
