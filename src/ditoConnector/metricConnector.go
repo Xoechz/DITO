@@ -190,12 +190,12 @@ func (m *metricConnector) processMessages() {
 
 func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[metricGroup]metricValue, pcommon.Timestamp, pcommon.Timestamp) {
 	metricGroups := make(map[metricGroup]metricValue)
-	minTime := currentBatch[0].span.StartTimestamp()
-	maxTime := currentBatch[0].span.EndTimestamp()
+	minTime := currentBatch[0].sr.span.StartTimestamp()
+	maxTime := currentBatch[0].sr.span.EndTimestamp()
 
 	for _, msg := range currentBatch {
 		// check if job span exists, if not wait for the job span(for a max duration)
-		jobSpan, _, jobState := m.sharedCache.getJobSpan(&msg.span, msg.entityKey)
+		jobSpan, _, jobState := m.sharedCache.getJobSpan(msg.sr.span, msg.entityKey)
 
 		currentTime := time.Now()
 		waitingTimeNotExceeded := msg.receivedAt.Add(m.config.MaxCacheDuration).After(currentTime)
@@ -212,33 +212,33 @@ func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[
 		}
 		// cache and sampling are not needed for the metrics
 
-		statusCode := msg.span.Status().Code()
+		statusCode := msg.sr.span.Status().Code()
 
 		metricGroup := metricGroup{
 			statusCode: statusCode,
 		}
 
 		if jobState != JobStateNotFound {
-			metricGroup.jobSpanId = jobSpan.SpanID()
+			metricGroup.jobSpanId = jobSpan.span.SpanID()
 		}
 
 		mv, exists := metricGroups[metricGroup]
 		if !exists {
 			mv = metricValue{
 				count:   0,
-				jobSpan: jobSpan,
+				jobSpan: jobSpan.span,
 			}
 		}
 
 		mv.count++
 		metricGroups[metricGroup] = mv
 
-		if msg.span.StartTimestamp() < minTime {
-			minTime = msg.span.StartTimestamp()
+		if msg.sr.span.StartTimestamp() < minTime {
+			minTime = msg.sr.span.StartTimestamp()
 		}
 
-		if msg.span.EndTimestamp() > maxTime {
-			maxTime = msg.span.EndTimestamp()
+		if msg.sr.span.EndTimestamp() > maxTime {
+			maxTime = msg.sr.span.EndTimestamp()
 		}
 	}
 

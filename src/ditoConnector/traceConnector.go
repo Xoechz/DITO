@@ -23,7 +23,7 @@ type traceConnector struct {
 	sweeperWG                sync.WaitGroup
 	started                  bool
 	waitQueue                chan *entityWorkItem
-	outputQueue              chan *ptrace.Span
+	outputQueue              chan *spanWithResource
 	internalOutputQueue      chan *ptrace.Span
 	currentRootSpan          *ptrace.Span
 	aggregateProcessDuration time.Duration
@@ -45,7 +45,7 @@ func newTraceConnector(logger *zap.Logger, config component.Config, nextConsumer
 		sharedCache:         newSharedCache(cfg, logger),
 		shutdownChannel:     make(chan struct{}),
 		waitQueue:           make(chan *entityWorkItem, cfg.QueueSize),
-		outputQueue:         make(chan *ptrace.Span, cfg.BatchSize*cfg.WorkerCount),
+		outputQueue:         make(chan *spanWithResource, cfg.BatchSize*cfg.WorkerCount),
 		internalOutputQueue: make(chan *ptrace.Span, cfg.BatchSize),
 	}, nil
 }
@@ -192,7 +192,7 @@ func (t *traceConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 
 func (t *traceConnector) processMessage(msg *entityWorkItem) {
 	// check if job span exists, if not wait for the job span(for a max duration)
-	jobSpan, newJobSpanId, jobState := t.sharedCache.getJobSpan(&msg.span, msg.entityKey)
+	jobSpan, newJobSpanId, jobState := t.sharedCache.getJobSpan(msg.sr.span, msg.entityKey)
 
 	currentTime := time.Now()
 	waitingTimeNotExceeded := msg.receivedAt.Add(t.config.MaxCacheDuration).After(currentTime)
@@ -216,14 +216,14 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 		rootSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(currentTime))
 		rootSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(currentTime))
 
-		t.outputQueue <- &rootSpan
+		t.outputQueue <- &spanWithResource{span: &rootSpan}
 	}
 
 	// drop the span if the status is not an error and sampling says so
 	// error spans are also increasing the sampling counter, so theoretically
 	// if the samping fraction is 2 and every second span is an error, we could run into a situation
 	// where every span is kept, but this is an edge case and acceptable
-	if msg.span.Status().Code() != ptrace.StatusCodeError && cache.samplingCounter%t.config.SamplingFraction != 0 {
+	if msg.sr.span.Status().Code() != ptrace.StatusCodeError && cache.samplingCounter%t.config.SamplingFraction != 0 {
 		t.logger.Debug("Non-error span skipped due to sampling", zap.String("entityKey", msg.entityKey))
 		return
 	}
@@ -235,32 +235,31 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 
 	if jobState == JobStateCreated {
 		// add link to the original job span
-		jLink := jobSpan.Links().AppendEmpty()
-		jLink.SetTraceID(jobSpan.TraceID())
-		jLink.SetSpanID(jobSpan.SpanID())
+		jLink := jobSpan.span.Links().AppendEmpty()
+		jLink.SetTraceID(jobSpan.span.TraceID())
+		jLink.SetSpanID(jobSpan.span.SpanID())
 
-		jobSpan.SetTraceID(cache.traceId)
-		jobSpan.SetSpanID(newJobSpanId)
-		jobSpan.SetParentSpanID(cache.rootSpanId)
+		jobSpan.span.SetTraceID(cache.traceId)
+		jobSpan.span.SetSpanID(newJobSpanId)
+		jobSpan.span.SetParentSpanID(cache.rootSpanId)
 
 		t.outputQueue <- jobSpan
 	}
 
 	newSpanId := generateSpanID()
-	es := ptrace.NewSpan()
-	msg.span.CopyTo(es)
+	es := msg.sr.copy()
 
-	es.SetTraceID(cache.traceId)
-	es.SetSpanID(newSpanId)
-	es.SetParentSpanID(parentSpanId)
+	es.span.SetTraceID(cache.traceId)
+	es.span.SetSpanID(newSpanId)
+	es.span.SetParentSpanID(parentSpanId)
 
-	eLink := es.Links().AppendEmpty()
-	eLink.SetTraceID(msg.span.TraceID())
-	eLink.SetSpanID(msg.span.SpanID())
+	eLink := es.span.Links().AppendEmpty()
+	eLink.SetTraceID(msg.sr.span.TraceID())
+	eLink.SetSpanID(msg.sr.span.SpanID())
 
 	t.aggregateProcessDuration += time.Since(currentTime)
 
-	t.outputQueue <- &es
+	t.outputQueue <- es
 }
 
 func (t *traceConnector) flushOutput() {
@@ -281,28 +280,54 @@ func (t *traceConnector) flushOutput() {
 	internalSpan.Attributes().PutInt("dito.entity.ready", int64(len(t.outputQueue)))
 
 	batch := ptrace.NewTraces()
-	rs := batch.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr("service.name", SERVICE_NAME)
-	scopeSpan := rs.ScopeSpans().AppendEmpty()
-	scopeSpan.Scope().SetName(SERVICE_NAME)
-	scopeSpan.Spans().EnsureCapacity(len(t.outputQueue))
+	defaultResourceSpan := batch.ResourceSpans().AppendEmpty()
+	defaultResource := defaultResourceSpan.Resource()
+	defaultResourceHash := GetHashCode(&defaultResource)
+	defaultResourceSpan.Resource().Attributes().PutStr("service.name", SERVICE_NAME)
+
+	defaultScope := pcommon.NewInstrumentationScope()
+	defaultScope.SetName(SERVICE_NAME)
+	defaultScopeSpan := defaultResourceSpan.ScopeSpans().AppendEmpty()
+	defaultScope.CopyTo(defaultScopeSpan.Scope())
+
+	resourceMap := make(map[uint32]*ptrace.ScopeSpans)
+	resourceMap[defaultResourceHash] = &defaultScopeSpan
 
 	counter := 0
 	for len(t.outputQueue) > 0 {
 		span := <-t.outputQueue
-		span.CopyTo(scopeSpan.Spans().AppendEmpty())
 		counter++
+
+		if span.resource == nil {
+			// put in default resource span
+			span.span.CopyTo(defaultScopeSpan.Spans().AppendEmpty())
+		} else {
+			hash := GetHashCode(span.resource)
+
+			ss, exists := resourceMap[hash]
+
+			if !exists {
+				newRs := batch.ResourceSpans().AppendEmpty()
+				span.resource.CopyTo(newRs.Resource())
+				newScopeSpan := newRs.ScopeSpans().AppendEmpty()
+				defaultScope.CopyTo(newScopeSpan.Scope())
+				ss = &newScopeSpan
+				resourceMap[hash] = ss
+			}
+
+			span.span.CopyTo(ss.Spans().AppendEmpty())
+		}
 	}
 
 	for len(t.internalOutputQueue) > 0 {
 		span := <-t.internalOutputQueue
-		span.CopyTo(scopeSpan.Spans().AppendEmpty())
+		span.CopyTo(defaultScopeSpan.Spans().AppendEmpty())
 	}
 
 	internalSpan.Attributes().PutInt("dito.entity.flushed", int64(counter))
 	internalSpan.Attributes().PutInt("dito.entity.pending", int64(len(t.sharedCache.messageQueue)))
 
-	internalRootSpan := scopeSpan.Spans().AppendEmpty()
+	internalRootSpan := defaultScopeSpan.Spans().AppendEmpty()
 	t.currentRootSpan.CopyTo(internalRootSpan)
 	t.currentRootSpan = nil
 
@@ -310,7 +335,7 @@ func (t *traceConnector) flushOutput() {
 	internalSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 	internalRootSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 	internalRootSpan.Attributes().PutInt("dito.aggregate_process_duration_ns", t.aggregateProcessDuration.Nanoseconds())
-	internalSpan.CopyTo(scopeSpan.Spans().AppendEmpty())
+	internalSpan.CopyTo(defaultScopeSpan.Spans().AppendEmpty())
 
 	t.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(t.sharedCache.messageQueue)))
 	err := t.traceConsumer.ConsumeTraces(context.Background(), batch)

@@ -18,9 +18,14 @@ const (
 	JobStateCreated
 )
 
+type spanWithResource struct {
+	span     *ptrace.Span
+	resource *pcommon.Resource
+}
+
 type entityWorkItem struct {
 	entityKey  string
-	span       ptrace.Span
+	sr         *spanWithResource
 	receivedAt time.Time
 }
 
@@ -38,7 +43,7 @@ type entityInfoCacheItem struct {
 }
 
 type jobCacheItem struct {
-	jobSpan       *ptrace.Span
+	rs            *spanWithResource
 	newJobSpanIds map[string]pcommon.SpanID // entityKey -> new SpanID
 	receivedAt    time.Time
 }
@@ -156,9 +161,9 @@ func (sc *sharedCache) drainJobQueue() {
 		select {
 		case addItem := <-sc.jobAddQueue:
 			if addItem != nil {
-				shardAdd := sc.shardForJob(addItem.jobSpan.SpanID())
+				shardAdd := sc.shardForJob(addItem.rs.span.SpanID())
 				shardAdd.mu.Lock()
-				shardAdd.jobCache[addItem.jobSpan.SpanID()] = addItem
+				shardAdd.jobCache[addItem.rs.span.SpanID()] = addItem
 				shardAdd.mu.Unlock()
 			}
 		default:
@@ -167,7 +172,7 @@ func (sc *sharedCache) drainJobQueue() {
 	}
 }
 
-func (sc *sharedCache) getJobSpan(entitySpan *ptrace.Span, entityKey string) (*ptrace.Span, pcommon.SpanID, JobState) {
+func (sc *sharedCache) getJobSpan(entitySpan *ptrace.Span, entityKey string) (*spanWithResource, pcommon.SpanID, JobState) {
 	sc.drainJobQueue()
 	jobSpanID := entitySpan.ParentSpanID()
 
@@ -202,24 +207,27 @@ func (sc *sharedCache) getJobSpan(entitySpan *ptrace.Span, entityKey string) (*p
 	}
 
 	// return a copy of the job span
-	returnSpan := ptrace.NewSpan()
-	jobItem.jobSpan.CopyTo(returnSpan)
+	returnSpan := jobItem.rs.copy()
 
 	// If the job span was already used for this entityKey, return the same spanID
 	newSpanId, exists := jobItem.newJobSpanIds[entityKey]
 	if exists {
-		return &returnSpan, newSpanId, JobStateFound
+		return returnSpan, newSpanId, JobStateFound
 	}
 
 	newSpanId = generateSpanID()
 	jobItem.newJobSpanIds[entityKey] = newSpanId
 
-	return &returnSpan, newSpanId, JobStateCreated
+	return returnSpan, newSpanId, JobStateCreated
 }
 
-func (sc *sharedCache) addJobSpan(jobSpan *ptrace.Span, receivedAt time.Time) {
+func (sc *sharedCache) addJobSpan(jobSpan *ptrace.Span, resource *pcommon.Resource, receivedAt time.Time) {
 	select {
-	case sc.jobAddQueue <- &jobCacheItem{jobSpan: jobSpan, receivedAt: receivedAt, newJobSpanIds: make(map[string]pcommon.SpanID)}:
+	case sc.jobAddQueue <- &jobCacheItem{
+		rs:            &spanWithResource{span: jobSpan, resource: resource},
+		receivedAt:    receivedAt,
+		newJobSpanIds: make(map[string]pcommon.SpanID),
+	}:
 	default:
 		sc.logger.Error("Job span queue full, dropping job span", zap.String("spanID", jobSpan.SpanID().String()))
 	}
@@ -231,6 +239,7 @@ func (sc *sharedCache) ingestTraces(td ptrace.Traces, cfg *Config) error {
 
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
+		resource := rs.Resource()
 		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
@@ -241,14 +250,14 @@ func (sc *sharedCache) ingestTraces(td ptrace.Traces, cfg *Config) error {
 				if isEntity {
 					sc.messageQueue <- &entityWorkItem{
 						entityKey:  entityKey.AsString(),
-						span:       span,
+						sr:         &spanWithResource{span: &span, resource: &resource},
 						receivedAt: now,
 					}
 				}
 
 				_, isJob := span.Attributes().Get(cfg.JobKey)
 				if isJob {
-					sc.addJobSpan(&span, now)
+					sc.addJobSpan(&span, &resource, now)
 				}
 			}
 		}
@@ -278,5 +287,17 @@ func (sc *sharedCache) sweep() {
 			}
 		}
 		sh.mu.Unlock()
+	}
+}
+
+func (sr *spanWithResource) copy() *spanWithResource {
+	newSpan := ptrace.NewSpan()
+	sr.span.CopyTo(newSpan)
+	newResource := pcommon.NewResource()
+	sr.resource.CopyTo(newResource)
+
+	return &spanWithResource{
+		span:     &newSpan,
+		resource: &newResource,
 	}
 }
