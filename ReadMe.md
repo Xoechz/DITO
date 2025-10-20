@@ -41,6 +41,9 @@ The following configs are available:
 - `max_cache_duration`
   - The maximum caching duration.
   - Default: 1h
+- `entity_cache_duration`
+  - The duration to cache entity information.
+  - Default: 168h (7 days)
 - `cache_shard_count`
   - The number of shards to use for the cache. A shard is a subset of the cache to prevent excessive locking.
   - Default: 32
@@ -70,6 +73,7 @@ connectors:
     job_key: dito.job_id
     baggage_job_key: dito.job_span_id
     max_cache_duration: 1h
+    entity_cache_duration: 168h
     cache_shard_count: 32
     queue_size: 10000
     worker_count: 4

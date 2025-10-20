@@ -15,16 +15,17 @@ var (
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		EntityKey:        "dito.key",
-		JobKey:           "dito.job_id",
-		BaggageJobKey:    "dito.job_span_id",
-		MaxCacheDuration: time.Hour,
-		SamplingFraction: 1,
-		CacheShardCount:  32,
-		QueueSize:        10000,
-		WorkerCount:      4,
-		BatchSize:        256,
-		BatchTimeout:     time.Minute,
+		EntityKey:           "dito.key",
+		JobKey:              "dito.job_id",
+		BaggageJobKey:       "dito.job_span_id",
+		MaxCacheDuration:    time.Hour,
+		EntityCacheDuration: time.Hour * 24 * 7,
+		SamplingFraction:    1,
+		CacheShardCount:     32,
+		QueueSize:           10000,
+		WorkerCount:         4,
+		BatchSize:           256,
+		BatchTimeout:        time.Minute,
 	}
 }
 

@@ -6,16 +6,17 @@ import (
 )
 
 type Config struct {
-	EntityKey        string        `mapstructure:"entity_key"`
-	JobKey           string        `mapstructure:"job_key"`
-	BaggageJobKey    string        `mapstructure:"baggage_job_key"`
-	MaxCacheDuration time.Duration `mapstructure:"max_cache_duration"`
-	CacheShardCount  int           `mapstructure:"cache_shard_count"`
-	QueueSize        int           `mapstructure:"queue_size"`
-	WorkerCount      int           `mapstructure:"worker_count"`
-	SamplingFraction int           `mapstructure:"sampling_fraction"`
-	BatchSize        int           `mapstructure:"batch_size"`
-	BatchTimeout     time.Duration `mapstructure:"batch_timeout"`
+	EntityKey           string        `mapstructure:"entity_key"`
+	JobKey              string        `mapstructure:"job_key"`
+	BaggageJobKey       string        `mapstructure:"baggage_job_key"`
+	MaxCacheDuration    time.Duration `mapstructure:"max_cache_duration"`
+	EntityCacheDuration time.Duration `mapstructure:"entity_cache_duration"`
+	CacheShardCount     int           `mapstructure:"cache_shard_count"`
+	QueueSize           int           `mapstructure:"queue_size"`
+	WorkerCount         int           `mapstructure:"worker_count"`
+	SamplingFraction    int           `mapstructure:"sampling_fraction"`
+	BatchSize           int           `mapstructure:"batch_size"`
+	BatchTimeout        time.Duration `mapstructure:"batch_timeout"`
 }
 
 func (cfg *Config) Validate() error {
@@ -33,6 +34,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.MaxCacheDuration <= 0 {
 		return fmt.Errorf("max_cache_duration must be positive")
+	}
+
+	if cfg.EntityCacheDuration <= 0 {
+		return fmt.Errorf("entity_cache_duration must be positive")
 	}
 
 	if cfg.SamplingFraction < 1 {

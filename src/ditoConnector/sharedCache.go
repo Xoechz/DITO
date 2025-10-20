@@ -263,7 +263,7 @@ func (sc *sharedCache) sweep() {
 	for _, sh := range sc.entityShards {
 		sh.mu.Lock()
 		for k, e := range sh.entityInfoCache {
-			if e.createdAt.Add(sc.config.MaxCacheDuration).Before(now) {
+			if e.createdAt.Add(sc.config.EntityCacheDuration).Before(now) {
 				delete(sh.entityInfoCache, k)
 			}
 		}
