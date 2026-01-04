@@ -38,6 +38,10 @@ exporters:
     endpoint: 0.0.0.0:14317
     tls:
       insecure: true
+  otlp/2:
+    endpoint: 0.0.0.0:24317
+    tls:
+      insecure: true
 
 connectors:
   dito:
@@ -48,20 +52,20 @@ service:
     traces/default:
       receivers: [otlp]
       processors: [memory_limiter, resourcedetection, batch]
-      exporters: [dito, otlp]
+      exporters: [dito, otlp, otlp/2]
     traces/dito:
       receivers: [dito]
       processors: [memory_limiter, batch]
-      exporters: [otlp]
+      exporters: [otlp, otlp/2]
     metrics/dito:
       receivers: [dito]
       processors: [memory_limiter, batch]
-      exporters: [otlp]
+      exporters: [otlp, otlp/2]
     metrics/default:
       receivers: [otlp, hostmetrics]
-      processors: [memory_limiter, batch]
-      exporters: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlp, otlp/2]
     logs/default:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlp, otlp/2]
