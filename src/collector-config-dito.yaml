@@ -38,12 +38,8 @@ processors:
         - 'attributes["http.response.status_code"] == 401'
 
 exporters:
-  otlp/aspire:
-    endpoint: "localhost:14317"
-    tls:
-      insecure: true
   otlp/grafana:
-    endpoint: "localhost:24317"
+    endpoint: "lgtm:4317"
     tls:
       insecure: true
 
@@ -64,20 +60,20 @@ service:
     traces/default:
       receivers: [otlp]
       processors: [memory_limiter, filter, batch]
-      exporters: [dito, otlp/aspire, otlp/grafana]
+      exporters: [dito, otlp/grafana]
     traces/dito:
       receivers: [dito]
       processors: [memory_limiter, batch, resourcedetection]
-      exporters: [otlp/aspire, otlp/grafana]
+      exporters: [otlp/grafana]
     metrics/dito:
       receivers: [dito]
       processors: [memory_limiter, batch, resourcedetection]
-      exporters: [otlp/aspire, otlp/grafana]
+      exporters: [otlp/grafana]
     metrics/default:
       receivers: [otlp, hostmetrics]
       processors: [memory_limiter, batch]
-      exporters: [otlp/aspire, otlp/grafana]
+      exporters: [otlp/grafana]
     logs/default:
       receivers: [otlp]
       processors: [memory_limiter, filter, batch]
-      exporters: [otlp/aspire, otlp/grafana]
+      exporters: [otlp/grafana]
