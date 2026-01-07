@@ -22,4 +22,4 @@ COPY --chmod=755 --from=build-stage /build/builder-output /otelcol
 ENTRYPOINT ["/otelcol/otelcol-dito"]
 CMD ["--config", "/otelcol/collector-config-dito.yaml"]
 
-EXPOSE 4317 4318 12001
+EXPOSE 4317 4318 55679 1777 13133

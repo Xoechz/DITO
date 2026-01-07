@@ -66,6 +66,14 @@ connectors:
       - [logs/otelcol]
       - [logs/azure]
 
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+
 service:
   pipelines:
     traces/input:

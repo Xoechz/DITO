@@ -102,7 +102,7 @@ func (m *metricConnector) Start(_ context.Context, _ component.Host) error {
 }
 
 // Shutdown signals goroutines, waits for completion, drains remaining queues.
-func (m *metricConnector) Shutdown(ctx context.Context) error {
+func (m *metricConnector) Shutdown(_ context.Context) error {
 	if !m.started {
 		return nil
 	}
