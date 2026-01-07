@@ -46,21 +46,6 @@ exporters:
     endpoint: "host.docker.internal:24317"
     tls:
       insecure: true
-  file/traces:
-    path: /otelcol/traces.log
-    rotation:
-      max_backups: 2
-      max_megabytes: 10
-  file/logs:
-    path: /otelcol/logs.log
-    rotation:
-      max_backups: 2
-      max_megabytes: 10
-  file/metrics:
-    path: /otelcol/metrics.log
-    rotation:
-      max_backups: 2
-      max_megabytes: 10
 
 connectors:
   dito:
@@ -79,20 +64,20 @@ service:
     traces/default:
       receivers: [otlp]
       processors: [memory_limiter, filter, batch]
-      exporters: [dito, otlp/aspire, otlp/grafana, file/traces]
+      exporters: [dito, otlp/aspire, otlp/grafana]
     traces/dito:
       receivers: [dito]
       processors: [memory_limiter, batch, resourcedetection]
-      exporters: [otlp/aspire, otlp/grafana, file/traces]
+      exporters: [otlp/aspire, otlp/grafana]
     metrics/dito:
       receivers: [dito]
       processors: [memory_limiter, batch, resourcedetection]
-      exporters: [otlp/aspire, otlp/grafana, file/metrics]
+      exporters: [otlp/aspire, otlp/grafana]
     metrics/default:
       receivers: [otlp, hostmetrics]
       processors: [memory_limiter, batch]
-      exporters: [otlp/aspire, otlp/grafana, file/metrics]
+      exporters: [otlp/aspire, otlp/grafana]
     logs/default:
       receivers: [otlp]
       processors: [memory_limiter, filter, batch]
-      exporters: [otlp/aspire, otlp/grafana, file/logs]
+      exporters: [otlp/aspire, otlp/grafana]
