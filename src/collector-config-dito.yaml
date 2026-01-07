@@ -39,7 +39,13 @@ processors:
 
 exporters:
   otlp/aspire:
+    endpoint: "host.docker.internal:14317"
+    tls:
+      insecure: true
   otlp/grafana:
+    endpoint: "host.docker.internal:24317"
+    tls:
+      insecure: true
   file/traces:
     path: /otelcol/traces.log
     rotation:
@@ -64,20 +70,20 @@ service:
     traces/default:
       receivers: [otlp]
       processors: [memory_limiter, filter, batch]
-      exporters: [dito, azuremonitor, file/traces]
+      exporters: [dito, otlp/aspire, otlp/grafana, file/traces]
     traces/dito:
       receivers: [dito]
       processors: [memory_limiter, batch, resourcedetection]
-      exporters: [azuremonitor, file/traces]
+      exporters: [otlp/aspire, otlp/grafana, file/traces]
     metrics/dito:
       receivers: [dito]
       processors: [memory_limiter, batch, resourcedetection]
-      exporters: [azuremonitor, file/metrics]
+      exporters: [otlp/aspire, otlp/grafana, file/metrics]
     metrics/default:
       receivers: [otlp, hostmetrics]
       processors: [memory_limiter, batch]
-      exporters: [azuremonitor, file/metrics]
+      exporters: [otlp/aspire, otlp/grafana, file/metrics]
     logs/default:
       receivers: [otlp]
       processors: [memory_limiter, filter, batch]
-      exporters: [azuremonitor, file/logs]
+      exporters: [otlp/aspire, otlp/grafana, file/logs]
