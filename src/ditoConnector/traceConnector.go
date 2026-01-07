@@ -51,7 +51,7 @@ func newTraceConnector(logger *zap.Logger, config component.Config, nextConsumer
 }
 
 // Start launches worker, batcher and sweeper goroutines.
-func (t *traceConnector) Start(ctx context.Context, host component.Host) error {
+func (t *traceConnector) Start(_ context.Context, _ component.Host) error {
 	if t.started {
 		return nil
 	}
@@ -148,7 +148,7 @@ func (t *traceConnector) startSweeper() {
 }
 
 // Shutdown signals goroutines, waits for completion, drains remaining queues.
-func (t *traceConnector) Shutdown(ctx context.Context) error {
+func (t *traceConnector) Shutdown(_ context.Context) error {
 	if !t.started {
 		return nil
 	}
@@ -165,7 +165,7 @@ func (t *traceConnector) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (t *traceConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (t *traceConnector) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	t.traceMu.Lock()
 	defer t.traceMu.Unlock()
 	t.startInternalTraceIfNotExists()

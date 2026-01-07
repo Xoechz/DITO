@@ -32,6 +32,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesToTracesConnector(
+	_ context.Context,
 	params connector.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
@@ -40,6 +41,7 @@ func createTracesToTracesConnector(
 }
 
 func createTracesToMetricsConnector(
+	_ context.Context,
 	params connector.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,

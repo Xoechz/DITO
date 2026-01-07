@@ -52,7 +52,7 @@ func newMetricConnector(logger *zap.Logger, config component.Config, nextConsume
 }
 
 // Start launches worker and sweeper goroutines.
-func (m *metricConnector) Start() error {
+func (m *metricConnector) Start(_ context.Context, _ component.Host) error {
 	if m.started {
 		return nil
 	}
@@ -118,7 +118,7 @@ func (m *metricConnector) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (m *metricConnector) ConsumeTraces() error {
+func (m *metricConnector) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	m.sharedCache.ingestTraces(td, &m.config)
 
 	m.logger.Debug("Metrics ingested", zap.Int("messageQueueLength", len(m.sharedCache.messageQueue)))
