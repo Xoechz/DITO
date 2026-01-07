@@ -75,6 +75,7 @@ extensions:
     endpoint: 0.0.0.0:55679
 
 service:
+  extensions: [health_check, pprof, zpages]
   pipelines:
     traces/input:
       receivers: [otlp]
