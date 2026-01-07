@@ -3,17 +3,16 @@ receivers:
     protocols:
       grpc:
         endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
   hostmetrics:
-    collection_interval: 60s
+    collection_interval: 5m
     scrapers:
       cpu:
-      load:
-      memory:
       disk:
+      load:
       filesystem:
+      memory:
       network:
+      system:
 
 processors:
   batch: 
@@ -24,18 +23,21 @@ processors:
     spike_limit_mib: 512
   resourcedetection:
     detectors: ["system"]
-
-extensions:
-  health_check:
-    endpoint: 0.0.0.0:13133
-  pprof:
-    endpoint: 0.0.0.0:1777
-  zpages:
-    endpoint: 0.0.0.0:55679
+  # filter out 401 status requests from traces and logs
+  filter:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["http.response.status_code"] == 401'
+      spanevent:
+        - 'attributes["http.response.status_code"] == 401'
+    logs:
+      log_record:
+        - 'attributes["http.response.status_code"] == 401'
 
 exporters:
   otlp:
-    endpoint: 0.0.0.0:14317
+    endpoint: localhost:14317
     tls:
       insecure: true
 
@@ -43,11 +45,10 @@ connectors:
   dito:
 
 service:
-  extensions: [health_check, pprof, zpages]
   pipelines:
     traces/default:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, batch]
+      processors: [memory_limiter, filter, batch, resourcedetection]
       exporters: [dito, otlp]
     traces/dito:
       receivers: [dito]
@@ -59,9 +60,9 @@ service:
       exporters: [otlp]
     metrics/default:
       receivers: [otlp, hostmetrics]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter, batch, resourcedetection]
       exporters: [otlp]
     logs/default:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter, filter, batch, resourcedetection]
       exporters: [otlp]

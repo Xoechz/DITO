@@ -1,0 +1,20 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  debug:
+
+service:
+  pipelines:
+    traces/default:
+      receivers: [otlp]
+      exporters: [debug]
+    metrics/default:
+      receivers: [otlp]
+      exporters: [debug]
+    logs/default:
+      receivers: [otlp]
+      exporters: [debug]

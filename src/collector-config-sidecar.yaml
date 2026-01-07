@@ -1,0 +1,106 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+  hostmetrics:
+    collection_interval: 5m
+    scrapers:
+      cpu:
+      disk:
+      load:
+      filesystem:
+      memory:
+      network:
+      system:
+
+processors:
+  batch: 
+    timeout: 1s
+  memory_limiter:
+    limit_mib: 4096
+    check_interval: 5s
+    spike_limit_mib: 512
+  resourcedetection:
+    detectors: ["system"]
+  attributes/nofailover:
+    actions:
+      - key: "collector.failover.used"
+        action: "upsert"
+        value: false
+  attributes/failover:
+    actions:
+      - key: "collector.failover.used"
+        action: "upsert"
+        value: true
+
+exporters:
+  otlphttp:
+    # Set OTLP_HTTP_ENDPOINT in container env
+    endpoint: ${OTLP_HTTP_ENDPOINT}
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true # is enabled on default, but for readability we set it explicitly
+      max_elapsed_time: 30s # retry for 30 seconds
+    sending_queue:
+      enabled: true # is enabled on default, but for readability we set it explicitly
+      wait_for_result: true # wait for the result of the sending process, this is true, so the failover connector works
+  azuremonitor:
+  
+connectors:
+# If the gateway collector is down send directly to azure monitor
+  failover/traces:
+    retry_interval: 1m # try the otlphttp again 1 minute after failure
+    priority_levels:
+      - [traces/otelcol]
+      - [traces/azure]
+  failover/metrics:
+    retry_interval: 1m # try the otlphttp again 1 minute after failure
+    priority_levels:
+      - [metrics/otelcol]
+      - [metrics/azure]
+  failover/logs:
+    retry_interval: 1m # try the otlphttp again 1 minute after failure
+    priority_levels:
+      - [logs/otelcol]
+      - [logs/azure]
+
+service:
+  pipelines:
+    traces/input:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [failover/traces]
+    metrics/input:
+      receivers: [otlp, hostmetrics]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [failover/metrics]
+    logs/input:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [failover/logs]
+    traces/otelcol:
+      receivers: [failover/traces]
+      processors: [attributes/nofailover]
+      exporters: [otlphttp]
+    metrics/otelcol:
+      receivers: [failover/metrics]
+      processors: [attributes/nofailover]
+      exporters: [otlphttp]
+    logs/otelcol:
+      receivers: [failover/logs]
+      processors: [attributes/nofailover]
+      exporters: [otlphttp]
+    traces/azure:
+      receivers: [failover/traces]
+      processors: [attributes/failover]
+      exporters: [azuremonitor]
+    metrics/azure:
+      receivers: [failover/metrics]
+      processors: [attributes/failover]
+      exporters: [azuremonitor]
+    logs/azure:
+      receivers: [failover/logs]
+      processors: [attributes/failover]
+      exporters: [azuremonitor]

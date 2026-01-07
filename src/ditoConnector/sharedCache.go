@@ -24,9 +24,9 @@ type spanWithResource struct {
 }
 
 type entityWorkItem struct {
-	entityKey  string
-	sr         *spanWithResource
-	receivedAt time.Time
+	fullEntityKey string
+	sr            *spanWithResource
+	receivedAt    time.Time
 }
 
 type entityInfo struct {
@@ -172,7 +172,7 @@ func (sc *sharedCache) drainJobQueue() {
 	}
 }
 
-func (sc *sharedCache) getJobSpan(entitySpan *ptrace.Span, entityKey string) (*spanWithResource, pcommon.SpanID, JobState) {
+func (sc *sharedCache) getJobSpan(entitySpan *ptrace.Span, fullEntityKey string) (*spanWithResource, pcommon.SpanID, JobState) {
 	sc.drainJobQueue()
 	jobSpanID := entitySpan.ParentSpanID()
 
@@ -210,13 +210,13 @@ func (sc *sharedCache) getJobSpan(entitySpan *ptrace.Span, entityKey string) (*s
 	returnSpan := jobItem.rs.copy()
 
 	// If the job span was already used for this entityKey, return the same spanID
-	newSpanId, exists := jobItem.newJobSpanIds[entityKey]
+	newSpanId, exists := jobItem.newJobSpanIds[fullEntityKey]
 	if exists {
 		return returnSpan, newSpanId, JobStateFound
 	}
 
 	newSpanId = generateSpanID()
-	jobItem.newJobSpanIds[entityKey] = newSpanId
+	jobItem.newJobSpanIds[fullEntityKey] = newSpanId
 
 	return returnSpan, newSpanId, JobStateCreated
 }
@@ -244,26 +244,39 @@ func (sc *sharedCache) ingestTraces(td ptrace.Traces, cfg *Config) error {
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			for k := 0; k < ils.Spans().Len(); k++ {
-				span := ils.Spans().At(k)
-
-				entityKey, isEntity := span.Attributes().Get(cfg.EntityKey)
-				if isEntity {
-					sc.messageQueue <- &entityWorkItem{
-						entityKey:  entityKey.AsString(),
-						sr:         &spanWithResource{span: &span, resource: &resource},
-						receivedAt: now,
-					}
-				}
-
-				_, isJob := span.Attributes().Get(cfg.JobKey)
-				if isJob {
-					sc.addJobSpan(&span, &resource, now)
-				}
+				sc.IngestSpan(ils.Spans().At(k), cfg, resource, now)
 			}
 		}
 	}
 
 	return nil
+}
+
+func (sc *sharedCache) IngestSpan(span ptrace.Span, cfg *Config, resource pcommon.Resource, now time.Time) {
+	entityKey, isEntity := span.Attributes().Get(cfg.EntityKey)
+	entityType, hasEntityTypeSet := span.Attributes().Get(cfg.EntityTypeKey)
+
+	var entityTypeString string
+
+	if hasEntityTypeSet {
+		entityTypeString = entityType.AsString()
+	} else {
+		entityTypeString = "UNKNOWN_TYPE"
+	}
+
+	if isEntity {
+
+		sc.messageQueue <- &entityWorkItem{
+			fullEntityKey: entityTypeString + " " + entityKey.AsString(),
+			sr:            &spanWithResource{span: &span, resource: &resource},
+			receivedAt:    now,
+		}
+	}
+
+	_, isJob := span.Attributes().Get(cfg.JobKey)
+	if isJob {
+		sc.addJobSpan(&span, &resource, now)
+	}
 }
 
 func (sc *sharedCache) sweep() {

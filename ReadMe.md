@@ -30,8 +30,11 @@ Then add it to one trace pipeline as exporter and to a trace or metric pipeline 
 The following configs are available:
 
 - `entity_key`
-  - The key of the attribute used to identify entity spans.
+  - The key of the attribute used to identify entity spans. The value of this attribute is combined with the entity type to identify an entity.
   - Default: dito.key
+- `entity_type_key`
+  - The key of the attribute used to identify the entity type. The value of this attribute is combined with the entity key to identify an entity.
+  - Default: dito.entity_type
 - `job_key`
   - The key of the attribute used to identify job spans.
   - Default: dito.job_id
@@ -70,6 +73,7 @@ The following configs are available:
 connectors:
   dito:
     entity_key: dito.key
+    entity_type_key: dito.entity_type
     job_key: dito.job_id
     baggage_job_key: dito.job_span_id
     max_cache_duration: 1h

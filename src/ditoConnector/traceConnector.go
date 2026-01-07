@@ -192,7 +192,7 @@ func (t *traceConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 
 func (t *traceConnector) processMessage(msg *entityWorkItem) {
 	// check if job span exists, if not wait for the job span(for a max duration)
-	jobSpan, newJobSpanId, jobState := t.sharedCache.getJobSpan(msg.sr.span, msg.entityKey)
+	jobSpan, newJobSpanId, jobState := t.sharedCache.getJobSpan(msg.sr.span, msg.fullEntityKey)
 
 	currentTime := time.Now()
 	waitingTimeNotExceeded := msg.receivedAt.Add(t.config.MaxCacheDuration).After(currentTime)
@@ -202,15 +202,15 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 		select {
 		case t.waitQueue <- msg:
 		default:
-			t.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("entityKey", msg.entityKey))
+			t.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("fullEntityKey", msg.fullEntityKey))
 		}
 		return
 	}
 
-	cache, entityWasCreated := t.sharedCache.getOrCreateEntityEntry(msg.entityKey)
+	cache, entityWasCreated := t.sharedCache.getOrCreateEntityEntry(msg.fullEntityKey)
 	if entityWasCreated {
 		rootSpan := ptrace.NewSpan()
-		rootSpan.SetName(msg.entityKey)
+		rootSpan.SetName(msg.fullEntityKey)
 		rootSpan.SetTraceID(cache.traceId)
 		rootSpan.SetSpanID(cache.rootSpanId)
 		rootSpan.SetKind(ptrace.SpanKindServer)
@@ -225,7 +225,7 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 	// if the samping fraction is 2 and every second span is an error, we could run into a situation
 	// where every span is kept, but this is an edge case and acceptable
 	if msg.sr.span.Status().Code() != ptrace.StatusCodeError && cache.samplingCounter%t.config.SamplingFraction != 0 {
-		t.logger.Debug("Non-error span skipped due to sampling", zap.String("entityKey", msg.entityKey))
+		t.logger.Debug("Non-error span skipped due to sampling", zap.String("fullEntityKey", msg.fullEntityKey))
 		return
 	}
 

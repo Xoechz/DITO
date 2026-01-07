@@ -73,32 +73,39 @@ func TestMetricsConnector(t *testing.T) {
 		inputSpan1.SetSpanID(generateSpanID())
 		inputSpan1.SetParentSpanID(jobSpanId1)
 		inputSpan1.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
+		inputSpan1.Attributes().PutStr(ENTITY_TYPE_KEY_VALUE, "TestData")
 		inputSpan1.Attributes().PutStr("test.key", "test.value")
 
 		inputSpan2.SetSpanID(generateSpanID())
 		inputSpan2.SetParentSpanID(jobSpanId2)
 		inputSpan2.Attributes().PutInt(ENTITY_KEY_VALUE, 2)
+		inputSpan2.Attributes().PutStr(ENTITY_TYPE_KEY_VALUE, "TestData")
 		inputSpan2.Attributes().PutStr("test.key", "test.value")
 
 		inputSpan3.SetSpanID(generateSpanID())
 		inputSpan3.SetParentSpanID(jobSpanId1)
 		inputSpan3.Attributes().PutInt(ENTITY_KEY_VALUE, 3)
+		inputSpan3.Attributes().PutStr(ENTITY_TYPE_KEY_VALUE, "TestData")
 
 		inputSpan4.SetSpanID(generateSpanID())
 		inputSpan4.SetParentSpanID(jobSpanId1)
 		inputSpan4.Attributes().PutInt(ENTITY_KEY_VALUE, 4)
+		inputSpan4.Attributes().PutStr(ENTITY_TYPE_KEY_VALUE, "TestData")
 
 		inputSpan5.SetSpanID(generateSpanID())
 		inputSpan5.SetParentSpanID(jobSpanId1)
 		inputSpan5.Attributes().PutInt(ENTITY_KEY_VALUE, 5)
+		inputSpan5.Attributes().PutStr(ENTITY_TYPE_KEY_VALUE, "TestData")
 
 		inputSpan6.SetSpanID(generateSpanID())
 		inputSpan6.SetParentSpanID(jobSpanId1)
 		inputSpan6.Attributes().PutInt(ENTITY_KEY_VALUE, 6)
+		inputSpan6.Attributes().PutStr(ENTITY_TYPE_KEY_VALUE, "TestData")
 
 		inputSpan7.SetSpanID(generateSpanID())
 		inputSpan7.SetParentSpanID(jobSpanId1)
 		inputSpan7.Attributes().PutInt(ENTITY_KEY_VALUE, 7)
+		inputSpan7.Attributes().PutStr(ENTITY_TYPE_KEY_VALUE, "TestData")
 		inputSpan7.Status().SetCode(ptrace.StatusCodeError)
 
 		// act

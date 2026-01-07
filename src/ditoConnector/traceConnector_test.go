@@ -139,8 +139,73 @@ func TestTracesConnector(t *testing.T) {
 		assert.True(t, actualJobExists)
 		assert.True(t, actualKeyExists)
 		assert.True(t, actualTestExists)
+		assert.Equal(t, "UNKNOWN_TYPE 1", rootSpan.Name())
 		assert.Equal(t, "1", actualJob.AsString())
 		assert.Equal(t, "1", actualKey.AsString())
+		assert.Equal(t, "test.value", actualTest.AsString())
+	})
+
+	t.Run("entity type set, adds type to key", func(t *testing.T) {
+		// arrange
+		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		defer connector.Shutdown(ctx)
+
+		traces := ptrace.NewTraces()
+		inputResourceSpan := traces.ResourceSpans().AppendEmpty()
+		inputScopeSpan := inputResourceSpan.ScopeSpans().AppendEmpty()
+		inputJobSpan := inputScopeSpan.Spans().AppendEmpty()
+		inputSpan := inputScopeSpan.Spans().AppendEmpty()
+
+		jobSpanId := generateSpanID()
+		inputJobSpan.SetSpanID(jobSpanId)
+		inputJobSpan.Attributes().PutInt(JOB_KEY_VALUE, 1)
+		inputJobSpan.Attributes().PutStr(ENTITY_TYPE_KEY_VALUE, "TestData")
+
+		inputSpan.SetSpanID(generateSpanID())
+		inputSpan.SetParentSpanID(jobSpanId)
+		inputSpan.Attributes().PutInt(ENTITY_KEY_VALUE, 1)
+		inputSpan.Attributes().PutStr(ENTITY_TYPE_KEY_VALUE, "TestData")
+		inputSpan.Attributes().PutStr("test.key", "test.value")
+
+		// act
+		err := connector.ConsumeTraces(ctx, traces)
+		require.NoError(t, err)
+		time.Sleep(TEST_WAIT)   // allow worker to process
+		connector.flushOutput() // ensure all spans are flushed
+
+		// assert
+		spanTrees := buildSpanTrees(tracesConsumer.AllTraces())
+
+		require.NotNil(t, spanTrees)
+		assert.Len(t, spanTrees, 2)
+		assert.Len(t, spanTrees[0].children, 1)
+		assert.Len(t, spanTrees[0].children[0].children, 1)
+		assert.Len(t, spanTrees[1].children, 2)
+
+		rootSpan := spanTrees[0].span
+		jobSpan := spanTrees[0].children[0].span
+		entitySpan := spanTrees[0].children[0].children[0].span
+
+		assertAllUnequal(t, []any{rootSpan.ParentSpanID(), jobSpan.ParentSpanID(), entitySpan.ParentSpanID()})
+		assert.True(t, rootSpan.ParentSpanID().IsEmpty())
+		assert.Equal(t, rootSpan.SpanID(), jobSpan.ParentSpanID())
+		assert.Equal(t, jobSpan.SpanID(), entitySpan.ParentSpanID())
+
+		actualJob, actualJobExists := jobSpan.Attributes().Get(JOB_KEY_VALUE)
+		actualJobEntityType, actualJobEntityTypeExists := jobSpan.Attributes().Get(ENTITY_TYPE_KEY_VALUE)
+		actualKey, actualKeyExists := entitySpan.Attributes().Get(ENTITY_KEY_VALUE)
+		actualEntityType, actualEntityTypeExists := entitySpan.Attributes().Get(ENTITY_TYPE_KEY_VALUE)
+		actualTest, actualTestExists := entitySpan.Attributes().Get("test.key")
+		assert.True(t, actualJobExists)
+		assert.True(t, actualKeyExists)
+		assert.True(t, actualTestExists)
+		assert.True(t, actualJobEntityTypeExists)
+		assert.True(t, actualEntityTypeExists)
+		assert.Equal(t, "TestData 1", rootSpan.Name())
+		assert.Equal(t, "1", actualJob.AsString())
+		assert.Equal(t, "TestData", actualJobEntityType.AsString())
+		assert.Equal(t, "1", actualKey.AsString())
+		assert.Equal(t, "TestData", actualEntityType.AsString())
 		assert.Equal(t, "test.value", actualTest.AsString())
 	})
 

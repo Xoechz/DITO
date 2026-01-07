@@ -9,10 +9,11 @@ import (
 )
 
 const (
-	ENTITY_KEY_VALUE   = "dito.key"
-	JOB_KEY_VALUE      = "dito.job_id"
-	MAX_CACHE_DURATION = 20 * time.Millisecond
-	TEST_WAIT          = 150 * time.Millisecond
+	ENTITY_KEY_VALUE      = "dito.key"
+	ENTITY_TYPE_KEY_VALUE = "dito.entity_type"
+	JOB_KEY_VALUE         = "dito.job_id"
+	MAX_CACHE_DURATION    = 20 * time.Millisecond
+	TEST_WAIT             = 150 * time.Millisecond
 )
 
 func assertAllUnequal(t *testing.T, items []any) {

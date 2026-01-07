@@ -17,6 +17,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	exampleConfig := cfg.(*Config)
 	assert.Equal(t, 1, exampleConfig.SamplingFraction)
 	assert.Equal(t, ENTITY_KEY_VALUE, exampleConfig.EntityKey)
+	assert.Equal(t, ENTITY_TYPE_KEY_VALUE, exampleConfig.EntityTypeKey)
 	assert.Equal(t, JOB_KEY_VALUE, exampleConfig.JobKey)
 	assert.Equal(t, time.Hour, exampleConfig.MaxCacheDuration)
 	assert.Equal(t, time.Hour*24*7, exampleConfig.EntityCacheDuration)
@@ -39,6 +40,13 @@ func TestConfigValidation(t *testing.T) {
 	t.Run("invalid entity key", func(t *testing.T) {
 		cfg = createDefaultConfig().(*Config)
 		cfg.EntityKey = ""
+		err := cfg.Validate()
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid entity type key", func(t *testing.T) {
+		cfg = createDefaultConfig().(*Config)
+		cfg.EntityTypeKey = ""
 		err := cfg.Validate()
 		assert.Error(t, err)
 	})

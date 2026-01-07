@@ -1,0 +1,81 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+  hostmetrics:
+    collection_interval: 5m
+    scrapers:
+      cpu:
+      disk:
+      load:
+      filesystem:
+      memory:
+      network:
+      system:
+
+processors:
+  batch: 
+    timeout: 1s
+  memory_limiter:
+    limit_mib: 4096
+    check_interval: 5s
+    spike_limit_mib: 512
+  resourcedetection:
+    detectors: ["system"]
+  # filter out 401 status requests from traces and logs
+  filter:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["http.response.status_code"] == 401'
+      spanevent:
+        - 'attributes["http.response.status_code"] == 401'
+    logs:
+      log_record:
+        - 'attributes["http.response.status_code"] == 401'
+
+exporters:
+  azuremonitor:
+  # fileexporter keeps some telemetry in the collector for debugging
+  file/traces:
+    path: C:/otelcol/traces.log
+    rotation:
+      max_backups: 2
+      max_megabytes: 10
+  file/logs:
+    path: C:/otelcol/logs.log
+    rotation:
+      max_backups: 2
+      max_megabytes: 10
+  file/metrics:
+    path: C:/otelcol/metrics.log
+    rotation:
+      max_backups: 2
+      max_megabytes: 10
+
+connectors:
+  dito:
+
+service:
+  pipelines:
+    traces/default:
+      receivers: [otlp]
+      processors: [memory_limiter, filter, batch]
+      exporters: [dito, azuremonitor, file/traces]
+    traces/dito:
+      receivers: [dito]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [azuremonitor, file/traces]
+    metrics/dito:
+      receivers: [dito]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [azuremonitor, file/metrics]
+    metrics/default:
+      receivers: [otlp, hostmetrics]
+      processors: [memory_limiter, batch]
+      exporters: [azuremonitor, file/metrics]
+    logs/default:
+      receivers: [otlp]
+      processors: [memory_limiter, filter, batch]
+      exporters: [azuremonitor, file/logs]

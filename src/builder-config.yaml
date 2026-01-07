@@ -2,33 +2,30 @@ dist:
   name: otelcol-dito
   description: DITO stands for Data and Information Tracing with OpenTelemetry and groups traces of data points traveling trough a system together to better understand dataflows.
   module: otelcol-dito
-  version: 0.0.1
+  version: 0.142.0
   output_path: ./builder-output
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.137.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.137.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.137.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.137.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.142.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.142.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.142.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.142.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.142.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.137.0
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.137.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.137.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.137.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.137.0
-
-extensions:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.137.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.137.0
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.137.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.142.0
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.142.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.142.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.142.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.142.0
 
 connectors:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.142.0
   - gomod: github.com/Xoechz/DITO/src/ditoConnector v0.0.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.137.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.137.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.142.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.142.0
 
 replaces:
   - github.com/Xoechz/DITO/src/ditoConnector => 

@@ -195,7 +195,7 @@ func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[
 
 	for _, msg := range currentBatch {
 		// check if job span exists, if not wait for the job span(for a max duration)
-		jobSpan, _, jobState := m.sharedCache.getJobSpan(msg.sr.span, msg.entityKey)
+		jobSpan, _, jobState := m.sharedCache.getJobSpan(msg.sr.span, msg.fullEntityKey)
 
 		currentTime := time.Now()
 		waitingTimeNotExceeded := msg.receivedAt.Add(m.config.MaxCacheDuration).After(currentTime)
@@ -206,7 +206,7 @@ func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[
 			select {
 			case m.sharedCache.messageQueue <- msg:
 			default:
-				m.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("entityKey", msg.entityKey))
+				m.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("fullEntityKey", msg.fullEntityKey))
 			}
 			continue
 		}
