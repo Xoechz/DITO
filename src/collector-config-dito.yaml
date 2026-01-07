@@ -39,11 +39,11 @@ processors:
 
 exporters:
   otlp/aspire:
-    endpoint: "host.docker.internal:14317"
+    endpoint: "localhost:14317"
     tls:
       insecure: true
   otlp/grafana:
-    endpoint: "host.docker.internal:24317"
+    endpoint: "localhost:24317"
     tls:
       insecure: true
 
