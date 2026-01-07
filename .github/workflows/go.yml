@@ -42,7 +42,6 @@ jobs:
           tags: |
             xoechz/dito:latest
             xoechz/dito:0.142.0
-          pull: true
           push: true
         
 
