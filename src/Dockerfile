@@ -5,8 +5,9 @@ FROM golang:latest AS build-stage
 WORKDIR /build
 
 COPY ./builder-config.yaml builder-config.yaml
+COPY ./ditoConnector ditoConnector
 
-RUN --mount=type=cache,target=/root/.cache/go-build GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.131.0
+RUN --mount=type=cache,target=/root/.cache/go-build GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.142.0
 RUN --mount=type=cache,target=/root/.cache/go-build builder --config builder-config.yaml
 
 FROM gcr.io/distroless/base:latest
@@ -14,12 +15,11 @@ FROM gcr.io/distroless/base:latest
 ARG USER_UID=10001
 USER ${USER_UID}
 
-COPY ./collector-config-gateway.yaml /otelcol/collector-config-gateway.yaml
-COPY ./collector-config-sidecar.yaml /otelcol/collector-config-sidecar.yaml
+COPY ./collector-config-dito.yaml /otelcol/collector-config-dito.yaml
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --chmod=755 --from=build-stage /build/builder-output /otelcol
 
 ENTRYPOINT ["/otelcol/otelcol-dito"]
-CMD ["--config", "/otelcol/collector-config-gateway.yaml"]
+CMD ["--config", "/otelcol/collector-config-dito.yaml"]
 
 EXPOSE 4317 4318 12001

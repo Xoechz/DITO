@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+    _ "github.com/expr-lang/expr" // ensure latest version is included to fix CVE-2025-68156
 )
 
 var (

@@ -3,6 +3,7 @@ module github.com/Xoechz/dito/src/ditoConnector
 go 1.25.0
 
 require (
+	github.com/expr-lang/expr v1.17.7
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.48.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0

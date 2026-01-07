@@ -15,7 +15,7 @@ receivers:
       system:
 
 processors:
-  batch: 
+  batch:
     timeout: 1s
   memory_limiter:
     limit_mib: 4096
@@ -47,9 +47,9 @@ exporters:
       enabled: true # is enabled on default, but for readability we set it explicitly
       wait_for_result: true # wait for the result of the sending process, this is true, so the failover connector works
   azuremonitor:
-  
+
 connectors:
-# If the gateway collector is down send directly to azure monitor
+  # If the gateway collector is down send directly to azure monitor
   failover/traces:
     retry_interval: 1m # try the otlphttp again 1 minute after failure
     priority_levels:

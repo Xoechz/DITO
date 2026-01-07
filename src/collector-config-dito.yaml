@@ -1,6 +1,8 @@
 receivers:
   otlp:
     protocols:
+      http:
+        endpoint: 0.0.0.0:4318
       grpc:
         endpoint: 0.0.0.0:4317
   hostmetrics:
@@ -15,7 +17,7 @@ receivers:
       system:
 
 processors:
-  batch: 
+  batch:
     timeout: 1s
   memory_limiter:
     limit_mib: 4096
@@ -36,10 +38,23 @@ processors:
         - 'attributes["http.response.status_code"] == 401'
 
 exporters:
-  otlp:
-    endpoint: localhost:14317
-    tls:
-      insecure: true
+  otlp/aspire:
+  otlp/grafana:
+  file/traces:
+    path: /otelcol/traces.log
+    rotation:
+      max_backups: 2
+      max_megabytes: 10
+  file/logs:
+    path: /otelcol/logs.log
+    rotation:
+      max_backups: 2
+      max_megabytes: 10
+  file/metrics:
+    path: /otelcol/metrics.log
+    rotation:
+      max_backups: 2
+      max_megabytes: 10
 
 connectors:
   dito:
@@ -48,21 +63,21 @@ service:
   pipelines:
     traces/default:
       receivers: [otlp]
-      processors: [memory_limiter, filter, batch, resourcedetection]
-      exporters: [dito, otlp]
+      processors: [memory_limiter, filter, batch]
+      exporters: [dito, azuremonitor, file/traces]
     traces/dito:
       receivers: [dito]
-      processors: [memory_limiter, batch]
-      exporters: [otlp]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [azuremonitor, file/traces]
     metrics/dito:
       receivers: [dito]
-      processors: [memory_limiter, batch]
-      exporters: [otlp]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [azuremonitor, file/metrics]
     metrics/default:
       receivers: [otlp, hostmetrics]
-      processors: [memory_limiter, batch, resourcedetection]
-      exporters: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [azuremonitor, file/metrics]
     logs/default:
       receivers: [otlp]
-      processors: [memory_limiter, filter, batch, resourcedetection]
-      exporters: [otlp]
+      processors: [memory_limiter, filter, batch]
+      exporters: [azuremonitor, file/logs]

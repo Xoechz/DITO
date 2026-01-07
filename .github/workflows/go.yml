@@ -5,32 +5,29 @@ name: Go
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version-file: src/ditoConnector/go.mod
-        cache: true
-        cache-dependency-path: |
-          **/go.mod
-          **/go.sum
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: src/ditoConnector/go.mod
+          cache: true
+          cache-dependency-path: |
+            **/go.mod
+            **/go.sum
 
-    - name: Build
-      run: cd src && ./ocb --config builder-config.yaml
+      - name: Test
+        run: cd src/ditoConnector && go test -v -coverprofile=coverage.out -covermode=count -json > report.json
 
-    - name: Test
-      run: cd src/ditoConnector && go test -v -coverprofile=coverage.out -covermode=count -json > report.json
-      
-    - name: SonarQube Scan
-      uses: SonarSource/sonarqube-scan-action@v6
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
