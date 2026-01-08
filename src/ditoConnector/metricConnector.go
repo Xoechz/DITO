@@ -140,6 +140,11 @@ func (m *metricConnector) processMessages() {
 		currentBatch = append(currentBatch, msg)
 	}
 
+	// guard if message queue was emptied by other goroutine
+	if len(currentBatch) == 0 {
+		return
+	}
+
 	metricGroups, minTime, maxTime := m.getMetricGroups(currentBatch)
 
 	metrics := pmetric.NewMetrics()
@@ -162,14 +167,16 @@ func (m *metricConnector) processMessages() {
 		dp := sum.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(minTime)
 		dp.SetTimestamp(maxTime)
-
-		value.jobSpan.Attributes().CopyTo(dp.Attributes())
 		dp.Attributes().PutStr("dito.entity.status_code", group.statusCode.String())
 		dp.SetIntValue(value.count)
 
-		exemplar := dp.Exemplars().AppendEmpty()
-		exemplar.SetTraceID(value.jobSpan.TraceID())
-		exemplar.SetSpanID(value.jobSpan.SpanID())
+		if value.jobSpan != nil {
+			value.jobSpan.Attributes().CopyTo(dp.Attributes())
+
+			exemplar := dp.Exemplars().AppendEmpty()
+			exemplar.SetTraceID(value.jobSpan.TraceID())
+			exemplar.SetSpanID(value.jobSpan.SpanID())
+		}
 	}
 
 	durationMetric := sm.Metrics().AppendEmpty()
@@ -189,6 +196,11 @@ func (m *metricConnector) processMessages() {
 }
 
 func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[metricGroup]metricValue, pcommon.Timestamp, pcommon.Timestamp) {
+	// Guard against empty batch
+	if len(currentBatch) == 0 {
+		return &map[metricGroup]metricValue{}, pcommon.Timestamp(0), pcommon.Timestamp(0)
+	}
+
 	metricGroups := make(map[metricGroup]metricValue)
 	minTime := currentBatch[0].sr.span.StartTimestamp()
 	maxTime := currentBatch[0].sr.span.EndTimestamp()
@@ -225,8 +237,11 @@ func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[
 		mv, exists := metricGroups[metricGroup]
 		if !exists {
 			mv = metricValue{
-				count:   0,
-				jobSpan: jobSpan.span,
+				count: 0,
+			}
+
+			if jobState != JobStateNotFound {
+				mv.jobSpan = jobSpan.span
 			}
 		}
 

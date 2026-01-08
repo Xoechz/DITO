@@ -25,17 +25,6 @@ processors:
     spike_limit_mib: 512
   resourcedetection:
     detectors: ["system"]
-  # filter out 401 status requests from traces and logs
-  filter:
-    error_mode: ignore
-    traces:
-      span:
-        - 'attributes["http.response.status_code"] == 401'
-      spanevent:
-        - 'attributes["http.response.status_code"] == 401'
-    logs:
-      log_record:
-        - 'attributes["http.response.status_code"] == 401'
 
 exporters:
   otlp/aspire:
@@ -63,7 +52,7 @@ service:
   pipelines:
     traces/default:
       receivers: [otlp]
-      processors: [memory_limiter, filter, batch]
+      processors: [memory_limiter, batch]
       exporters: [dito, otlp/aspire, otlp/grafana]
     traces/dito:
       receivers: [dito]
@@ -79,5 +68,5 @@ service:
       exporters: [otlp/aspire, otlp/grafana]
     logs/default:
       receivers: [otlp]
-      processors: [memory_limiter, filter, batch]
+      processors: [memory_limiter, batch]
       exporters: [otlp/aspire, otlp/grafana]
