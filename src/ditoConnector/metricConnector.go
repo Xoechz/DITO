@@ -165,10 +165,6 @@ func (m *metricConnector) processMessages() {
 
 	for group, value := range *metricGroups {
 		dp := sum.DataPoints().AppendEmpty()
-		dp.SetStartTimestamp(minTime)
-		dp.SetTimestamp(maxTime)
-		dp.Attributes().PutStr("dito.entity.status_code", group.statusCode.String())
-		dp.SetIntValue(value.count)
 
 		if value.jobSpan != nil {
 			value.jobSpan.Attributes().CopyTo(dp.Attributes())
@@ -177,6 +173,11 @@ func (m *metricConnector) processMessages() {
 			exemplar.SetTraceID(value.jobSpan.TraceID())
 			exemplar.SetSpanID(value.jobSpan.SpanID())
 		}
+
+		dp.SetStartTimestamp(minTime)
+		dp.SetTimestamp(maxTime)
+		dp.Attributes().PutStr("dito.entity.status_code", group.statusCode.String())
+		dp.SetIntValue(value.count)
 	}
 
 	durationMetric := sm.Metrics().AppendEmpty()
@@ -230,18 +231,17 @@ func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[
 			statusCode: statusCode,
 		}
 
+		var jobSpanSpan *ptrace.Span = nil
 		if jobState != JobStateNotFound {
 			metricGroup.jobSpanId = jobSpan.span.SpanID()
+			jobSpanSpan = jobSpan.span
 		}
 
 		mv, exists := metricGroups[metricGroup]
 		if !exists {
 			mv = metricValue{
-				count: 0,
-			}
-
-			if jobState != JobStateNotFound {
-				mv.jobSpan = jobSpan.span
+				count:   0,
+				jobSpan: jobSpanSpan,
 			}
 		}
 
