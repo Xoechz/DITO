@@ -1,0 +1,23 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  debug:
+
+connectors:
+  empty:
+    example_setting: "other example value"
+
+service:
+  pipelines:
+    traces/default:
+      receivers: [otlp]
+      exporters: [empty]
+    traces/empty:
+      receivers: [empty]
+      exporters: [debug]

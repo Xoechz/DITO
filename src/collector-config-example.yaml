@@ -26,21 +26,9 @@ services:
   pipelines:
     traces/default:
       receivers: [otlp]
-      processors: [memory_limiter, filter, batch]
-      exporters: [dito, debug]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [dito, debug, empty]
     traces/dito:
       receivers: [dito]
-      processors: [memory_limiter, batch, resourcedetection]
-      exporters: [debug]
-    metrics/dito:
-      receivers: [dito]
-      processors: [memory_limiter, batch, resourcedetection]
-      exporters: [debug]
-    metrics/default:
-      receivers: [otlp, hostmetrics]
-      processors: [memory_limiter, batch]
-      exporters: [debug]
-    logs/default:
-      receivers: [otlp]
-      processors: [memory_limiter, filter, batch]
+      processors: [batch]
       exporters: [debug]
