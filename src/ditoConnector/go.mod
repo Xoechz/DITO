@@ -1,4 +1,4 @@
-module github.com/Xoechz/dito/src/ditoConnector
+module github.com/Xoechz/DITO/src/ditoConnector
 
 go 1.25.0
 

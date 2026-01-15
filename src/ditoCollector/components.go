@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	failoverconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
-	ditoConnector "github.com/Xoechz/dito/src/ditoConnector"
+	ditoConnector "github.com/Xoechz/DITO/src/ditoConnector"
 	debugexporter "go.opentelemetry.io/collector/exporter/debugexporter"
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -103,7 +103,7 @@ func components() (otelcol.Factories, error) {
 	}
 	factories.ConnectorModules = make(map[component.Type]string, len(factories.Connectors))
 	factories.ConnectorModules[failoverconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.142.0"
-	factories.ConnectorModules[ditoConnector.NewFactory().Type()] = "github.com/Xoechz/dito/src/ditoConnector v0.0.0"
+	factories.ConnectorModules[ditoConnector.NewFactory().Type()] = "github.com/Xoechz/DITO/src/ditoConnector v0.0.0"
 
 	return factories, nil
 }

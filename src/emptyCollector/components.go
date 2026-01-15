@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
-	emptyConnector "github.com/Xoechz/dito/src/emptyConnector"
+	emptyConnector "github.com/Xoechz/DITO/src/emptyConnector"
 	debugexporter "go.opentelemetry.io/collector/exporter/debugexporter"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
@@ -61,7 +61,7 @@ func components() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 	factories.ConnectorModules = make(map[component.Type]string, len(factories.Connectors))
-	factories.ConnectorModules[emptyConnector.NewFactory().Type()] = "github.com/Xoechz/dito/src/emptyConnector v0.0.0"
+	factories.ConnectorModules[emptyConnector.NewFactory().Type()] = "github.com/Xoechz/DITO/src/emptyConnector v0.0.0"
 
 	return factories, nil
 }

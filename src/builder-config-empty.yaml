@@ -1,7 +1,7 @@
 dist:
   name: otelcol-empty
   description: Empty connector example for OpenTelemetry Collector Builder.
-  module: github.com/Xoechz/dito/src/emptyCollector
+  module: github.com/Xoechz/DITO/src/emptyCollector
   version: 0.142.0
   output_path: ./emptyCollector
 
@@ -12,8 +12,8 @@ exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.142.0
 
 connectors:
-  - gomod: github.com/Xoechz/dito/src/emptyConnector v0.0.0
+  - gomod: github.com/Xoechz/DITO/src/emptyConnector v0.0.0
 
 replaces:
-  - github.com/Xoechz/dito/src/emptyConnector =>
+  - github.com/Xoechz/DITO/src/emptyConnector =>
     ../emptyConnector

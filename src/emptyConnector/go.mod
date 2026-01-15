@@ -1,4 +1,4 @@
-module github.com/Xoechz/dito/src/emptyConnector
+module github.com/Xoechz/DITO/src/emptyConnector
 
 go 1.25.0
 
