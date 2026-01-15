@@ -17,7 +17,7 @@ USER ${USER_UID}
 
 COPY ./collector-config-example.yaml /otelcol/collector-config-example.yaml
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --chmod=755 --from=build-stage /build/builder-output /otelcol
+COPY --chmod=755 --from=build-stage /build/ditoCollector /otelcol
 
 ENTRYPOINT ["/otelcol/otelcol-dito"]
 CMD ["--config", "/otelcol/collector-config-example.yaml"]
