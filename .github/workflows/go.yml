@@ -33,7 +33,9 @@ jobs:
             **/go.sum
 
       - name: Test
-        run: cd src/ditoConnector && go test -v -coverprofile=coverage.out -covermode=count -json > report.json
+        run: |
+          cd src
+          go test ./ditoConnector/... ./emptyConnector/... -coverprofile=coverage.out -covermode=atomic -json > report.json
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v6.18.0
