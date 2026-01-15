@@ -1,0 +1,9 @@
+go 1.25.0
+
+use ./ditoCollector
+
+use ./ditoConnector
+
+use ./emptyCollector
+
+use ./emptyConnector
