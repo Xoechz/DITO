@@ -103,7 +103,7 @@ func components() (otelcol.Factories, error) {
 	}
 	factories.ConnectorModules = make(map[component.Type]string, len(factories.Connectors))
 	factories.ConnectorModules[failoverconnector.NewFactory().Type()] = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.142.0"
-	factories.ConnectorModules[ditoConnector.NewFactory().Type()] = "github.com/Xoechz/DITO/src/ditoConnector v0.0.0"
+	factories.ConnectorModules[ditoConnector.NewFactory().Type()] = "github.com/Xoechz/DITO/src/ditoConnector v0.142.0"
 
 	return factories, nil
 }

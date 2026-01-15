@@ -5,7 +5,7 @@ module github.com/Xoechz/DITO/src/emptyCollector
 go 1.25.0
 
 require (
-	github.com/Xoechz/DITO/src/emptyConnector v0.0.0
+	github.com/Xoechz/DITO/src/emptyConnector v0.142.0
 	go.opentelemetry.io/collector/component v1.48.0
 	go.opentelemetry.io/collector/confmap v1.48.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.48.0

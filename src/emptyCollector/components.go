@@ -61,7 +61,7 @@ func components() (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 	factories.ConnectorModules = make(map[component.Type]string, len(factories.Connectors))
-	factories.ConnectorModules[emptyConnector.NewFactory().Type()] = "github.com/Xoechz/DITO/src/emptyConnector v0.0.0"
+	factories.ConnectorModules[emptyConnector.NewFactory().Type()] = "github.com/Xoechz/DITO/src/emptyConnector v0.142.0"
 
 	return factories, nil
 }

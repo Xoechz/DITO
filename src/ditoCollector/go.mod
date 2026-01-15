@@ -5,7 +5,7 @@ module github.com/Xoechz/DITO/src/ditoCollector
 go 1.25.0
 
 require (
-	github.com/Xoechz/DITO/src/ditoConnector v0.0.0
+	github.com/Xoechz/DITO/src/ditoConnector v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.142.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.142.0

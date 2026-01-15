@@ -12,7 +12,7 @@ exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.142.0
 
 connectors:
-  - gomod: github.com/Xoechz/DITO/src/emptyConnector v0.0.0
+  - gomod: github.com/Xoechz/DITO/src/emptyConnector v0.142.0
 
 replaces:
   - github.com/Xoechz/DITO/src/emptyConnector =>

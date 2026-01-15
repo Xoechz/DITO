@@ -25,7 +25,7 @@ exporters:
 
 connectors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector v0.142.0
-  - gomod: github.com/Xoechz/DITO/src/ditoConnector v0.0.0
+  - gomod: github.com/Xoechz/DITO/src/ditoConnector v0.142.0
 
 extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.142.0
