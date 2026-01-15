@@ -40,7 +40,7 @@ func (t *traceConnector) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (t *traceConnector) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+func (t *traceConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	t.logger.Debug("Passing through traces", zap.Int("span_count", td.SpanCount()))
-	return t.traceConsumer.ConsumeTraces(context.Background(), td)
+	return t.traceConsumer.ConsumeTraces(ctx, td)
 }
