@@ -66,6 +66,9 @@ The following configs are available:
 - `batch_timeout`
   - The maximum duration to wait before processing a batch.
   - Default: 1m
+- `use_links`
+  - Whether to use span links to reference the original spans instead of attributes(this setting exists because ApplicationInsights displays links weirdly).
+  - Default: true
 
 ### Example
 
@@ -84,6 +87,7 @@ connectors:
     sampling_fraction: 1
     batch_size: 256
     batch_timeout: 1m
+    use_links: true
 service:
   pipelines:
     traces/default:

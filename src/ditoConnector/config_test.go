@@ -26,6 +26,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, 4, exampleConfig.WorkerCount)
 	assert.Equal(t, 256, exampleConfig.BatchSize)
 	assert.Equal(t, time.Minute, exampleConfig.BatchTimeout)
+	assert.Equal(t, true, exampleConfig.UseLinks)
 }
 
 func TestConfigValidation(t *testing.T) {

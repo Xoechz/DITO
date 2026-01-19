@@ -236,8 +236,13 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 
 	if jobState == JobStateCreated {
 		// add reference to the original job span
-		jobSpan.span.Attributes().PutStr("dito.original.trace_id", jobSpan.span.TraceID().String())
-		jobSpan.span.Attributes().PutStr("dito.original.span_id", jobSpan.span.SpanID().String())
+		if t.config.UseLinks {
+			jobSpan.span.Links().AppendEmpty().SetSpanID(jobSpan.span.SpanID())
+			jobSpan.span.Links().At(0).SetTraceID(jobSpan.span.TraceID())
+		} else {
+			jobSpan.span.Attributes().PutStr("dito.original.trace_id", jobSpan.span.TraceID().String())
+			jobSpan.span.Attributes().PutStr("dito.original.span_id", jobSpan.span.SpanID().String())
+		}
 
 		jobSpan.span.SetTraceID(cache.traceId)
 		jobSpan.span.SetSpanID(newJobSpanId)
@@ -254,8 +259,13 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 	es.span.SetParentSpanID(parentSpanId)
 
 	// Add reference to the original span
-	es.span.Attributes().PutStr("dito.original.trace_id", msg.sr.span.TraceID().String())
-	es.span.Attributes().PutStr("dito.original.span_id", msg.sr.span.SpanID().String())
+	if t.config.UseLinks {
+		es.span.Links().AppendEmpty().SetSpanID(msg.sr.span.SpanID())
+		es.span.Links().At(0).SetTraceID(msg.sr.span.TraceID())
+	} else {
+		es.span.Attributes().PutStr("dito.original.trace_id", msg.sr.span.TraceID().String())
+		es.span.Attributes().PutStr("dito.original.span_id", msg.sr.span.SpanID().String())
+	}
 
 	t.aggregateProcessDuration += time.Since(currentTime)
 

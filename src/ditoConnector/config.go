@@ -18,6 +18,7 @@ type Config struct {
 	SamplingFraction    int           `mapstructure:"sampling_fraction"`
 	BatchSize           int           `mapstructure:"batch_size"`
 	BatchTimeout        time.Duration `mapstructure:"batch_timeout"`
+	UseLinks            bool          `mapstructure:"use_links"`
 }
 
 func (cfg *Config) Validate() error {

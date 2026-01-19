@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
+	_ "github.com/expr-lang/expr" // ensure latest version is included to fix CVE-2025-68156
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-    _ "github.com/expr-lang/expr" // ensure latest version is included to fix CVE-2025-68156
 )
 
 var (
@@ -28,6 +28,7 @@ func createDefaultConfig() component.Config {
 		WorkerCount:         4,
 		BatchSize:           256,
 		BatchTimeout:        time.Minute,
+		UseLinks:            true,
 	}
 }
 
