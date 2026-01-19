@@ -173,6 +173,25 @@
          d="M 5.77,0 -2.88,5 V -5 Z"
          id="path135-1-5" />
     </marker>
+    <marker
+       style="overflow:visible"
+       id="Triangle-4-6"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.5)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         id="path135-95-2" />
+    </marker>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -181,9 +200,9 @@
      borderopacity="0.3"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1"
-     inkscape:cx="349"
-     inkscape:cy="287.5"
+     inkscape:zoom="0.70710678"
+     inkscape:cx="-125.86501"
+     inkscape:cy="277.89296"
      inkscape:document-units="mm"
      inkscape:showpageshadow="0"
      inkscape:pagecheckerboard="1"
@@ -207,7 +226,7 @@
   </metadata>
   <g
      id="g4-4-6"
-     transform="translate(-321.01463,-254.04328)"
+     transform="translate(-321.01463,-265.29328)"
      inkscape:label="ConsumeTraces"
      style="display:inline">
     <rect
@@ -238,7 +257,7 @@
   </g>
   <g
      id="g4-4-6-2"
-     transform="translate(2.1442947,-82.364655)"
+     transform="translate(2.1442947,-93.614655)"
      inkscape:label="messageQueue"
      style="display:inline">
     <rect
@@ -264,7 +283,7 @@
   </g>
   <g
      id="g4-4-6-2-1"
-     transform="translate(-7.7212219,-410.09855)"
+     transform="translate(-7.7212219,-481.09855)"
      inkscape:label="Caches"
      style="display:inline">
     <rect
@@ -273,29 +292,50 @@
        width="49.510635"
        height="14.510636"
        x="82.965904"
-       y="410.34323"
+       y="481.34323"
        rx="1.9804255"
        ry="1.9347515" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777px;font-family:'JetBrainsMono Nerd Font';-inkscape-font-specification:'JetBrainsMono Nerd Font, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;writing-mode:lr-tb;direction:ltr;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       x="107.72122"
-       y="415.89462"
+       x="107.81753"
+       y="490.40125"
        id="text3-8-5-7-6"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:'JetBrainsMono Nerd Font';-inkscape-font-specification:'JetBrainsMono Nerd Font, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;stroke:none;stroke-width:0.5"
-         x="107.72122"
-         y="415.89462"
-         id="tspan9-7-5-3">Caches</tspan><tspan
+         x="107.81753"
+         y="490.40125"
+         id="tspan4">Job Cache</tspan></text>
+  </g>
+  <g
+     id="g4-4-6-2-1-2"
+     transform="translate(-7.7212219,-413.59855)"
+     inkscape:label="Caches"
+     style="display:inline">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.489364;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect1-9-3-3-0-7"
+       width="49.510635"
+       height="14.510636"
+       x="82.965904"
+       y="481.34323"
+       rx="1.9804255"
+       ry="1.9347515" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52777px;font-family:'JetBrainsMono Nerd Font';-inkscape-font-specification:'JetBrainsMono Nerd Font, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;writing-mode:lr-tb;direction:ltr;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.499999;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       x="107.81753"
+       y="490.40125"
+       id="text3-8-5-7-6-0"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:'JetBrainsMono Nerd Font';-inkscape-font-specification:'JetBrainsMono Nerd Font, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;stroke:none;stroke-width:0.5"
-         x="107.72122"
-         y="422.06824"
-         id="tspan7">(Job &amp; Entity)</tspan></text>
+         x="107.81753"
+         y="490.40125"
+         id="tspan4-9">Entity Cache</tspan></text>
   </g>
   <g
      id="g4-4-6-28"
-     transform="translate(2.1442947,-0.99535429)"
+     transform="translate(2.1442947,10.254646)"
      inkscape:label="outputQueue"
      style="display:inline">
     <rect
@@ -321,7 +361,7 @@
   </g>
   <g
      id="g4-4-6-28-9"
-     transform="translate(108.61976,-239.39997)"
+     transform="translate(108.61976,-250.64997)"
      inkscape:label="processMessage"
      style="display:inline">
     <rect
@@ -435,31 +475,35 @@
   </g>
   <path
      style="fill:none;fill-opacity:1;stroke:#7d7d7d;stroke-width:0.562951;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Triangle)"
-     d="M 50,52.5 73,52.5"
+     d="M 50,41.25 73,41.25"
      id="path6-8-8" />
   <path
      style="fill:none;fill-opacity:1;stroke:#7d7d7d;stroke-width:0.562951;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Triangle-8)"
-     d="M 125,52.5 148,52.5"
+     d="M 125,41.25 148,41.25"
      id="path6-8-8-2" />
   <path
      style="fill:none;fill-opacity:1;stroke:#7d7d7d;stroke-width:0.562951;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Triangle-4)"
-     d="M 150.5,59.5 125.5,89"
+     d="M 175,48.75 125.75,100.5"
      id="path6-8-8-0" />
   <path
+     style="fill:none;fill-opacity:1;stroke:#7d7d7d;stroke-width:0.563;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Triangle-4-6);marker-start:url(#Triangle)"
+     d="M 149,49.2 126,67"
+     id="path6-8-8-0-6" />
+  <path
      style="fill:none;fill-opacity:1;stroke:#7d7d7d;stroke-width:0.562951;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Triangle-7)"
-     d="M 49.5,45.5 74.25,15.75"
+     d="M 49.5,34.5 74.25,15.75"
      id="path6-8-8-7" />
   <path
      style="fill:none;fill-opacity:1;stroke:#7d7d7d;stroke-width:0.562951;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Triangle-7-6)"
-     d="M 25,15 25,43"
+     d="M 25,15 25,31.75"
      id="path6-8-8-7-6" />
   <path
      style="fill:none;fill-opacity:1;stroke:#7d7d7d;stroke-width:0.647378;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Triangle-6)"
-     d="M 124.5,14.5 149,44"
+     d="M 124.5,14.5 148.7,33.1"
      id="path6-8-8-9" />
   <path
      style="fill:none;fill-opacity:1;stroke:#7d7d7d;stroke-width:0.562951;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Triangle-0)"
-     d="M 100,105 100,133"
+     d="M 100,116.25 100,133"
      id="path6-8-8-77" />
   <path
      style="fill:none;fill-opacity:1;stroke:#7d7d7d;stroke-width:0.562951;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Triangle-5)"

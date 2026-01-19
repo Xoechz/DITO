@@ -265,7 +265,6 @@ func (sc *sharedCache) IngestSpan(span ptrace.Span, cfg *Config, resource pcommo
 	}
 
 	if isEntity {
-
 		sc.messageQueue <- &entityWorkItem{
 			fullEntityKey: entityTypeString + " " + entityKey.AsString(),
 			sr:            &spanWithResource{span: &span, resource: &resource},
