@@ -20,7 +20,7 @@ func main() {
 	info := component.BuildInfo{
 		Command:     "otelcol-dito",
 		Description: "DITO stands for Data and Information Tracing with OpenTelemetry and groups traces of data points traveling trough a system together to better understand dataflows.",
-		Version:     "0.142.0",
+		Version:     "0.143.0",
 	}
 
 	set := otelcol.CollectorSettings{

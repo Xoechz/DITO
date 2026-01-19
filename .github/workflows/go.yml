@@ -43,7 +43,7 @@ jobs:
           context: "{{defaultContext}}:src"
           tags: |
             xoechz/dito:latest
-            xoechz/dito:0.142.0
+            xoechz/dito:0.143.0
           push: true
         
 

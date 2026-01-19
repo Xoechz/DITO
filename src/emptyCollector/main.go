@@ -20,7 +20,7 @@ func main() {
 	info := component.BuildInfo{
 		Command:     "otelcol-empty",
 		Description: "Empty connector example for OpenTelemetry Collector Builder.",
-		Version:     "0.142.0",
+		Version:     "0.143.0",
 	}
 
 	set := otelcol.CollectorSettings{
