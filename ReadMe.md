@@ -105,48 +105,13 @@ Sadly a connector can only have one entry point and one output point. So there w
 
 This diagram shows the architecture of the connector, as shown in the example configuration.
 
-```mermaid
-flowchart LR
-subgraph "default traces pipeline"
-dr[otlp receiver]
-end
+#### Traces-to-Traces
 
-subgraph "dito traces pipeline"
-te[otlp exporter]
-end
+![Traces-to-Traces](DitoDiagramTraces.svg)
 
-subgraph "dito metrics pipeline"
-me[otlp exporter]
-end
+#### Traces-to-Metrics
 
-subgraph "dito connector"
-subgraph "traceConnector"
-tc[ConsumeTraces]
-tp[processMessage]
-tf[flushOutput]
-tsc[sharedCache]
-end
-subgraph "metricConnector"
-mc[ConsumeTraces]
-mp[processMessages]
-msc[sharedCache]
-end
-end
-
-dr --> tc;
-dr --> mc;
-
-tc --> tsc;
-mc --> msc;
-
-tsc --> tp;
-msc --> mp;
-
-tp --> tf;
-
-tf --> te;
-mp ---> me;
-```
+![Traces-to-Metrics](DitoDiagramMetrics.svg)
 
 ### Sequence Diagram
 

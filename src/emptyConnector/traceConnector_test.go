@@ -21,7 +21,13 @@ func TestTracesConnector(t *testing.T) {
 
 	t.Run("passthrough span", func(t *testing.T) {
 		// arrange
-		connector, tracesConsumer := getReadyConnectorForTest(t, ctx)
+		tracesConsumer := &consumertest.TracesSink{}
+		cfg := createDefaultConfig().(*Config)
+
+		connector, err := newTraceConnector(zap.NewNop(), cfg, tracesConsumer)
+		require.NoError(t, err)
+		err = connector.Start(ctx, nil)
+		require.NoError(t, err)
 		defer connector.Shutdown(ctx)
 
 		traces := ptrace.NewTraces()
@@ -29,10 +35,10 @@ func TestTracesConnector(t *testing.T) {
 		inputScopeSpan := inputResourceSpan.ScopeSpans().AppendEmpty()
 		inputSpan := inputScopeSpan.Spans().AppendEmpty()
 
-		inputSpan.Attributes().PutInt("other", 1)
+		inputSpan.Attributes().PutInt("attribute", 1)
 
 		// act
-		err := connector.ConsumeTraces(ctx, traces)
+		err = connector.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
 
 		// assert
@@ -42,23 +48,8 @@ func TestTracesConnector(t *testing.T) {
 		outputResourceSpan := outputTraces[0].ResourceSpans().At(0)
 		outputScopeSpan := outputResourceSpan.ScopeSpans().At(0)
 		outputSpan := outputScopeSpan.Spans().At(0)
-		outputAttrValue, exists := outputSpan.Attributes().Get("other")
+		outputAttrValue, exists := outputSpan.Attributes().Get("attribute")
 		assert.True(t, exists)
 		assert.Equal(t, int64(1), outputAttrValue.Int())
 	})
-}
-
-func getReadyConnectorForTest(t *testing.T, ctx context.Context) (*traceConnector, *consumertest.TracesSink) {
-	// Create a test consumer that captures traces
-	tracesConsumer := &consumertest.TracesSink{}
-
-	cfg := createDefaultConfig().(*Config)
-
-	connector, err := newTraceConnector(zap.NewNop(), cfg, tracesConsumer)
-	require.NoError(t, err)
-
-	err = connector.Start(ctx, nil)
-	require.NoError(t, err)
-
-	return connector, tracesConsumer
 }
