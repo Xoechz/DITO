@@ -27,7 +27,7 @@ type metricConnector struct {
 	logger          *zap.Logger
 	config          Config
 	metricConsumer  consumer.Metrics
-	sharedCache     *sharedCache
+	ditoCache       *ditoCache
 	shutdownChannel chan struct{}
 	workerWG        sync.WaitGroup
 	sweeperWG       sync.WaitGroup
@@ -46,7 +46,7 @@ func newMetricConnector(logger *zap.Logger, config component.Config, nextConsume
 		config:          *cfg,
 		logger:          logger,
 		metricConsumer:  nextConsumer,
-		sharedCache:     newSharedCache(cfg, logger),
+		ditoCache:       newditoCache(cfg, logger),
 		shutdownChannel: make(chan struct{}),
 	}, nil
 }
@@ -74,7 +74,7 @@ func (m *metricConnector) Start(_ context.Context, _ component.Host) error {
 				m.processMessages()
 			default:
 				// opportunistic flush when buffer big
-				if len(m.sharedCache.messageQueue) >= m.config.BatchSize {
+				if len(m.ditoCache.messageQueue) >= m.config.BatchSize {
 					m.processMessages()
 				}
 				time.Sleep(10 * time.Millisecond) // small sleep to avoid busy loop
@@ -93,7 +93,7 @@ func (m *metricConnector) Start(_ context.Context, _ component.Host) error {
 			case <-m.shutdownChannel:
 				return
 			case <-sweepTicker.C:
-				m.sharedCache.sweep()
+				m.ditoCache.sweep()
 			}
 		}
 	}()
@@ -119,24 +119,24 @@ func (m *metricConnector) Shutdown(_ context.Context) error {
 }
 
 func (m *metricConnector) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	m.sharedCache.ingestTraces(td, &m.config)
+	m.ditoCache.ingestTraces(td, &m.config)
 
-	m.logger.Debug("Metrics ingested", zap.Int("messageQueueLength", len(m.sharedCache.messageQueue)))
+	m.logger.Debug("Metrics ingested", zap.Int("messageQueueLength", len(m.ditoCache.messageQueue)))
 
 	return nil
 }
 
 func (m *metricConnector) processMessages() {
-	if len(m.sharedCache.messageQueue) == 0 {
+	if len(m.ditoCache.messageQueue) == 0 {
 		return
 	}
 
 	startTime := time.Now()
 
 	// drain the message queue to prevent infinite loop due to re-queuing
-	currentBatch := make([]*entityWorkItem, 0, len(m.sharedCache.messageQueue))
-	for len(m.sharedCache.messageQueue) > 0 {
-		msg := <-m.sharedCache.messageQueue
+	currentBatch := make([]*entityWorkItem, 0, len(m.ditoCache.messageQueue))
+	for len(m.ditoCache.messageQueue) > 0 {
+		msg := <-m.ditoCache.messageQueue
 		currentBatch = append(currentBatch, msg)
 	}
 
@@ -151,7 +151,7 @@ func (m *metricConnector) processMessages() {
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().EnsureCapacity(3)
 	rm.Resource().Attributes().PutStr("service.name", SERVICE_NAME)
-	rm.Resource().Attributes().PutInt("dito.entity.pending", int64(len(m.sharedCache.messageQueue)))
+	rm.Resource().Attributes().PutInt("dito.entity.pending", int64(len(m.ditoCache.messageQueue)))
 
 	sm := rm.ScopeMetrics().AppendEmpty()
 	sm.Scope().SetName(SERVICE_NAME)
@@ -189,7 +189,7 @@ func (m *metricConnector) processMessages() {
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetIntValue(int64(time.Since(startTime).Nanoseconds()))
 
-	m.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(m.sharedCache.messageQueue)))
+	m.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(m.ditoCache.messageQueue)))
 	err := m.metricConsumer.ConsumeMetrics(context.Background(), metrics)
 	if err != nil {
 		m.logger.Error("Error sending metrics to next consumer", zap.Error(err))
@@ -208,7 +208,7 @@ func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[
 
 	for _, msg := range currentBatch {
 		// check if job span exists, if not wait for the job span(for a max duration)
-		jobSpan, _, jobState := m.sharedCache.getJobSpan(msg.sr.span, msg.fullEntityKey)
+		jobSpan, _, jobState := m.ditoCache.getJobSpan(msg.sr.span, msg.fullEntityKey)
 
 		currentTime := time.Now()
 		waitingTimeNotExceeded := msg.receivedAt.Add(m.config.MaxCacheDuration).After(currentTime)
@@ -217,7 +217,7 @@ func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[
 			// We don't need to use the waitingQueue, because we batch either way
 			// If the connector is shutdown we just process everything we have left
 			select {
-			case m.sharedCache.messageQueue <- msg:
+			case m.ditoCache.messageQueue <- msg:
 			default:
 				m.logger.Debug("Dropping entity span due to full requeue buffer", zap.String("fullEntityKey", msg.fullEntityKey))
 			}

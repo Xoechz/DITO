@@ -103,7 +103,7 @@ service:
 
 ## Architecture
 
-Sadly a connector can only have one entry point and one output point. So there will always be multiple instances of the connector running, if traces AND metrics are being processed. The shared cache is only shared for parallel processes of one instance.
+Sadly a connector can only have one entry point and one output point. So there will always be multiple instances of the connector running, if traces AND metrics are being processed. The dito cache is only shared for parallel processes of one instance.
 
 ### Architecture Diagram
 
@@ -185,7 +185,7 @@ end
 box traceConnector
 participant tc as traceConnector
 participant tm as messageQueue
-participant tsc as sharedCache
+participant tsc as ditoCache
 participant t1 as Worker 1
 participant t2 as Worker 2
 participant t3 as Worker 3

@@ -58,7 +58,7 @@ type jobCacheShard struct {
 	mu       sync.RWMutex
 }
 
-type sharedCache struct {
+type ditoCache struct {
 	logger       *zap.Logger
 	config       Config
 	jobAddQueue  chan *jobCacheItem
@@ -68,7 +68,7 @@ type sharedCache struct {
 	messageQueue chan *entityWorkItem
 }
 
-func newSharedCache(cfg *Config, logger *zap.Logger) *sharedCache {
+func newditoCache(cfg *Config, logger *zap.Logger) *ditoCache {
 	entityShards := make([]*entityInfoCacheShard, cfg.CacheShardCount)
 	jobShards := make([]*jobCacheShard, cfg.CacheShardCount)
 
@@ -81,7 +81,7 @@ func newSharedCache(cfg *Config, logger *zap.Logger) *sharedCache {
 		}
 	}
 
-	return &sharedCache{
+	return &ditoCache{
 		logger:       logger,
 		config:       *cfg,
 		jobAddQueue:  make(chan *jobCacheItem, 1000),
@@ -92,21 +92,21 @@ func newSharedCache(cfg *Config, logger *zap.Logger) *sharedCache {
 	}
 }
 
-func (sc *sharedCache) hashIndex(data []byte) uint32 {
+func (sc *ditoCache) hashIndex(data []byte) uint32 {
 	h := fnv.New32a()
 	h.Write(data)
 	return h.Sum32() % sc.shardCount
 }
 
-func (sc *sharedCache) shardForEntity(entityKey string) *entityInfoCacheShard {
+func (sc *ditoCache) shardForEntity(entityKey string) *entityInfoCacheShard {
 	return sc.entityShards[sc.hashIndex([]byte(entityKey))]
 }
 
-func (sc *sharedCache) shardForJob(jobSpanID pcommon.SpanID) *jobCacheShard {
+func (sc *ditoCache) shardForJob(jobSpanID pcommon.SpanID) *jobCacheShard {
 	return sc.jobShards[sc.hashIndex(jobSpanID[:])]
 }
 
-func (sc *sharedCache) getOrCreateEntityEntry(entityKey string) (entityInfo, bool) {
+func (sc *ditoCache) getOrCreateEntityEntry(entityKey string) (entityInfo, bool) {
 	shard := sc.shardForEntity(entityKey)
 
 	shard.mu.RLock()
@@ -155,7 +155,7 @@ func (sc *sharedCache) getOrCreateEntityEntry(entityKey string) (entityInfo, boo
 	}, true
 }
 
-func (sc *sharedCache) drainJobQueue() {
+func (sc *ditoCache) drainJobQueue() {
 	// Drain pending job spans without blocking.
 	for {
 		select {
@@ -172,7 +172,7 @@ func (sc *sharedCache) drainJobQueue() {
 	}
 }
 
-func (sc *sharedCache) getJobSpan(entitySpan *ptrace.Span, fullEntityKey string) (*spanWithResource, pcommon.SpanID, JobState) {
+func (sc *ditoCache) getJobSpan(entitySpan *ptrace.Span, fullEntityKey string) (*spanWithResource, pcommon.SpanID, JobState) {
 	sc.drainJobQueue()
 	jobSpanID := entitySpan.ParentSpanID()
 
@@ -221,7 +221,7 @@ func (sc *sharedCache) getJobSpan(entitySpan *ptrace.Span, fullEntityKey string)
 	return returnSpan, newSpanId, JobStateCreated
 }
 
-func (sc *sharedCache) addJobSpan(jobSpan *ptrace.Span, resource *pcommon.Resource, receivedAt time.Time) {
+func (sc *ditoCache) addJobSpan(jobSpan *ptrace.Span, resource *pcommon.Resource, receivedAt time.Time) {
 	select {
 	case sc.jobAddQueue <- &jobCacheItem{
 		rs:            &spanWithResource{span: jobSpan, resource: resource},
@@ -233,7 +233,7 @@ func (sc *sharedCache) addJobSpan(jobSpan *ptrace.Span, resource *pcommon.Resour
 	}
 }
 
-func (sc *sharedCache) ingestTraces(td ptrace.Traces, cfg *Config) error {
+func (sc *ditoCache) ingestTraces(td ptrace.Traces, cfg *Config) error {
 	rss := td.ResourceSpans()
 	now := time.Now()
 
@@ -252,7 +252,7 @@ func (sc *sharedCache) ingestTraces(td ptrace.Traces, cfg *Config) error {
 	return nil
 }
 
-func (sc *sharedCache) IngestSpan(span ptrace.Span, cfg *Config, resource pcommon.Resource, now time.Time) {
+func (sc *ditoCache) IngestSpan(span ptrace.Span, cfg *Config, resource pcommon.Resource, now time.Time) {
 	entityKey, isEntity := span.Attributes().Get(cfg.EntityKey)
 	entityType, hasEntityTypeSet := span.Attributes().Get(cfg.EntityTypeKey)
 
@@ -278,7 +278,7 @@ func (sc *sharedCache) IngestSpan(span ptrace.Span, cfg *Config, resource pcommo
 	}
 }
 
-func (sc *sharedCache) sweep() {
+func (sc *ditoCache) sweep() {
 	now := time.Now()
 
 	for _, sh := range sc.entityShards {
