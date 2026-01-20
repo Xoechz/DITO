@@ -86,7 +86,7 @@ func (m *metricConnector) Start(_ context.Context, _ component.Host) error {
 	m.sweeperWG.Add(1)
 	go func() {
 		defer m.sweeperWG.Done()
-		sweepTicker := time.NewTicker(m.config.MaxCacheDuration / 2)
+		sweepTicker := time.NewTicker(m.config.JobCacheDuration / 2)
 		defer sweepTicker.Stop()
 		for {
 			select {
@@ -211,7 +211,7 @@ func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[
 		jobSpan, _, jobState := m.ditoCache.getJobSpan(msg.sr.span, msg.fullEntityKey)
 
 		currentTime := time.Now()
-		waitingTimeNotExceeded := msg.receivedAt.Add(m.config.MaxCacheDuration).After(currentTime)
+		waitingTimeNotExceeded := msg.receivedAt.Add(m.config.MaxEntityWaitTime).After(currentTime)
 		if jobState == JobStateNotFound && waitingTimeNotExceeded && m.started {
 			// Requeue non-blocking; if queue full, drop (avoid shutdown hang / deadlock)
 			// We don't need to use the waitingQueue, because we batch either way

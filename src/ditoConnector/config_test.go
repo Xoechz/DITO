@@ -19,7 +19,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, ENTITY_KEY_VALUE, exampleConfig.EntityKey)
 	assert.Equal(t, ENTITY_TYPE_KEY_VALUE, exampleConfig.EntityTypeKey)
 	assert.Equal(t, JOB_KEY_VALUE, exampleConfig.JobKey)
-	assert.Equal(t, time.Hour, exampleConfig.MaxCacheDuration)
+	assert.Equal(t, time.Hour, exampleConfig.JobCacheDuration)
+	assert.Equal(t, time.Hour, exampleConfig.MaxEntityWaitTime)
 	assert.Equal(t, time.Hour*24*7, exampleConfig.EntityCacheDuration)
 	assert.Equal(t, 32, exampleConfig.CacheShardCount)
 	assert.Equal(t, 10000, exampleConfig.QueueSize)
@@ -59,9 +60,16 @@ func TestConfigValidation(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("invalid max cache duration", func(t *testing.T) {
+	t.Run("invalid job cache duration", func(t *testing.T) {
 		cfg = createDefaultConfig().(*Config)
-		cfg.MaxCacheDuration = 0
+		cfg.JobCacheDuration = 0
+		err := cfg.Validate()
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid max entity wait time", func(t *testing.T) {
+		cfg = createDefaultConfig().(*Config)
+		cfg.MaxEntityWaitTime = 0
 		err := cfg.Validate()
 		assert.Error(t, err)
 	})

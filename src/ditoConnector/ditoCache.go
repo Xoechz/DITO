@@ -294,7 +294,7 @@ func (sc *ditoCache) sweep() {
 	for _, sh := range sc.jobShards {
 		sh.mu.Lock()
 		for k, e := range sh.jobCache {
-			if e.receivedAt.Add(sc.config.MaxCacheDuration).Before(now) {
+			if e.receivedAt.Add(sc.config.JobCacheDuration).Before(now) {
 				delete(sh.jobCache, k)
 			}
 		}

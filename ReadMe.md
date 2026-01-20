@@ -29,46 +29,49 @@ Then add it to one trace pipeline as exporter and to a trace or metric pipeline 
 
 The following configs are available:
 
-- `entity_key`
-  - The key of the attribute used to identify entity spans. The value of this attribute is combined with the entity type to identify an entity.
-  - Default: dito.key
-- `entity_type_key`
-  - The key of the attribute used to identify the entity type. The value of this attribute is combined with the entity key to identify an entity.
-  - Default: dito.entity_type
-- `job_key`
-  - The key of the attribute used to identify job spans.
-  - Default: dito.job_id
 - `baggage_job_key`
   - The key of the attribute used as fallback, to find the job span, to the ParentSpanId of the entity span.
   - Default: dito.job_span_id
-- `max_cache_duration`
-  - The maximum caching duration.
-  - Default: 1h
-- `entity_cache_duration`
-  - The duration to cache entity information.
-  - Default: 168h (7 days)
-- `cache_shard_count`
-  - The number of shards to use for the cache. A shard is a subset of the cache to prevent excessive locking.
-  - Default: 32
-- `queue_size`
-  - The maximum number of messages to queue.
-  - Default: 10000
-- `worker_count`
-  - The number of worker goroutines to process messages.
-  - Default: 4
-- `sampling_fraction`
-  - The fraction of messages to sample for processing.
-  - Example: 2 => 1 in 2 spans are kept, 7 => 1 in 7 spans are kept.
-  - Default: 1
 - `batch_size`
   - The number of spans to process in each batch.
   - Default: 256
 - `batch_timeout`
   - The maximum duration to wait before processing a batch.
   - Default: 1m
+- `cache_shard_count`
+  - The number of shards to use for the cache. A shard is a subset of the cache to prevent excessive locking.
+  - Default: 32
+- `entity_cache_duration`
+  - The duration to cache entity information.
+  - Default: 168h (7 days)
+- `entity_key`
+  - The key of the attribute used to identify entity spans. The value of this attribute is combined with the entity type to identify an entity.
+  - Default: dito.key
+- `entity_type_key`
+  - The key of the attribute used to identify the entity type. The value of this attribute is combined with the entity key to identify an entity.
+  - Default: dito.entity_type
+- `job_cache_duration`
+  - The maximum caching duration for job spans.
+  - Default: 1h
+- `job_key`
+  - The key of the attribute used to identify job spans.
+  - Default: dito.job_id
+- `max_entity_wait_time`
+  - The maximum time to wait for a job span to appear, before giving up on linking the entity span to a job span.
+  - Default: 1h
+- `queue_size`
+  - The maximum number of messages to queue.
+  - Default: 10000
+- `sampling_fraction`
+  - The fraction of messages to sample for processing.
+  - Example: 2 => 1 in 2 spans are kept, 7 => 1 in 7 spans are kept.
+  - Default: 1
 - `use_links`
   - Whether to use span links to reference the original spans instead of attributes(this setting exists because ApplicationInsights displays links weirdly).
   - Default: true
+- `worker_count`
+  - The number of worker goroutines to process messages.
+  - Default: 4
 
 ### Example
 
@@ -79,7 +82,8 @@ connectors:
     entity_type_key: dito.entity_type
     job_key: dito.job_id
     baggage_job_key: dito.job_span_id
-    max_cache_duration: 1h
+    job_cache_duration: 1h
+    max_entity_wait_time: 1h
     entity_cache_duration: 168h
     cache_shard_count: 32
     queue_size: 10000

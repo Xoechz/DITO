@@ -116,7 +116,7 @@ func (t *traceConnector) startSweeper() {
 	t.sweeperWG.Add(1)
 	go func() {
 		defer t.sweeperWG.Done()
-		sweepTicker := time.NewTicker(t.config.MaxCacheDuration / 2)
+		sweepTicker := time.NewTicker(t.config.JobCacheDuration / 2)
 		requeueTicker := time.NewTicker(t.config.BatchTimeout)
 		defer sweepTicker.Stop()
 		defer requeueTicker.Stop()
@@ -195,7 +195,7 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 	jobSpan, newJobSpanId, jobState := t.ditoCache.getJobSpan(msg.sr.span, msg.fullEntityKey)
 
 	currentTime := time.Now()
-	waitingTimeNotExceeded := msg.receivedAt.Add(t.config.MaxCacheDuration).After(currentTime)
+	waitingTimeNotExceeded := msg.receivedAt.Add(t.config.MaxEntityWaitTime).After(currentTime)
 	if jobState == JobStateNotFound && waitingTimeNotExceeded && t.started {
 		// Requeue non-blocking; if queue full, drop (avoid shutdown hang / deadlock)
 		// If the connector is shutdown we just process everything we have left

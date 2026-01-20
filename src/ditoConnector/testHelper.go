@@ -12,7 +12,7 @@ const (
 	ENTITY_KEY_VALUE      = "dito.key"
 	ENTITY_TYPE_KEY_VALUE = "dito.entity_type"
 	JOB_KEY_VALUE         = "dito.job_id"
-	MAX_CACHE_DURATION    = 20 * time.Millisecond
+	JOB_CACHE_DURATION    = 20 * time.Millisecond
 	TEST_WAIT             = 150 * time.Millisecond
 )
 

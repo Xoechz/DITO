@@ -713,7 +713,8 @@ func getReadyConnectorForTest(t *testing.T, ctx context.Context) (*traceConnecto
 	tracesConsumer := &consumertest.TracesSink{}
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.MaxCacheDuration = MAX_CACHE_DURATION
+	cfg.JobCacheDuration = JOB_CACHE_DURATION
+	cfg.MaxEntityWaitTime = JOB_CACHE_DURATION
 
 	connector, err := newTraceConnector(zap.NewNop(), cfg, tracesConsumer)
 	require.NoError(t, err)

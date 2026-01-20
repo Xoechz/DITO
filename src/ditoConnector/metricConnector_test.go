@@ -165,7 +165,8 @@ func getReadyMetricConnectorForTest(t *testing.T, ctx context.Context) (*metricC
 	metricsConsumer := &consumertest.MetricsSink{}
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.MaxCacheDuration = MAX_CACHE_DURATION
+	cfg.JobCacheDuration = JOB_CACHE_DURATION
+	cfg.MaxEntityWaitTime = JOB_CACHE_DURATION
 	cfg.BatchTimeout = 100 * time.Millisecond
 
 	connector, err := newMetricConnector(zap.NewNop(), cfg, metricsConsumer)
