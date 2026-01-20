@@ -388,6 +388,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143.0/go.mod h1:6NqnoAm4M+kjlMGyn+wwp1fOjUCIWAilE6/MJkFjBIQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.143.0 h1:SuD/zqlxcQwvaMVlnmvktFpS01EEnzRZ0VsAs7KhHZQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.143.0/go.mod h1:4MSwXoV3wmdUX9dC3qbBfP4DkWaWZl3KI7mmULn/gm0=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.143.0 h1:upyPOkUAWpESV01xbGFqr4OHAVNh8wNHL543yh5gtKM=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.143.0/go.mod h1:pzxHDwrT3+38i6wa1AalpumYPnlkHYe0OVN5LSQ/CjY=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.143.0 h1:pAWV4xMArK6siKd8WsxH5hocU/iOL+wnuth81G7nmPw=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.143.0/go.mod h1:6SQBm65vrTIGbr8MWV7sBs3kXMrB15+NlnWK8zidPJ4=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.143.0 h1:NYeuMg5QR3VFY3EH1bcd7ExX074qC6wA1TtowTePzMI=
@@ -416,6 +418,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.143.0/go.mod h1:oHASqzYgg9+AEXfZZTz5xFKXVWtMUMHpd+AvXvgSvO0=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.143.0 h1:7U8ztjRLqN290/6R77R8ephBdBUjeFisPYYM0zfXE8M=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.143.0/go.mod h1:wLlfg5GSfKRGT3hFvmf7it5dg7VsUo6UYoYyj/9aXc0=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.143.0 h1:aW5LQYgioeXr36lbQbnNvQKNhuliSQ7kRYnyTyjqbGQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.143.0/go.mod h1:5xgvDQsVzmQaAbfbZPxACeF1evdZnQ1tH19M3TcwxsU=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.143.0 h1:0tmljCTRQo1w89Tr04DjDi4H0yN4cOE9NTrIik0sjIY=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.143.0/go.mod h1:aS+wX0FFfK/pAspSzCyNZDqVN9RVtIdrLO4MgX1NOp0=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.143.0 h1:tib4UiNHNspFqq6kNvlC+NAk9T6MEE28tdnN5BzqADM=
@@ -467,6 +471,8 @@ github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsT
 github.com/prometheus/procfs v0.0.8/go.mod h1:7Qr8sr6344vo1JqZ6HhLceV9o3AJ1Ff+GxbHq6oeK9A=
 github.com/prometheus/procfs v0.19.2 h1:zUMhqEW66Ex7OXIiDkll3tl9a1ZdilUOd/F6ZXw4Vws=
 github.com/prometheus/procfs v0.19.2/go.mod h1:M0aotyiemPhBCM0z5w87kL22CxfcH05ZpYlu+b4J7mw=
+github.com/puzpuzpuz/xsync/v3 v3.5.1 h1:GJYJZwO6IdxN/IKbneznS6yPkVC+c3zyY/j19c++5Fg=
+github.com/puzpuzpuz/xsync/v3 v3.5.1/go.mod h1:VjzYrABPabuM4KyBh1Ftq6u8nhwY5tBPKP9jpmh0nnA=
 github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/rs/cors v1.11.1 h1:eU3gRzXLRK57F5rKMGMZURNdIG4EoAmX8k94r9wXWHA=
