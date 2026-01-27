@@ -65,7 +65,6 @@ func getChildSpans(parent *ptrace.Span, allSpans []*ptrace.Span) []*spanTree {
 	var children []*spanTree
 
 	for _, span := range allSpans {
-
 		if span.ParentSpanID() == parent.SpanID() {
 			child := &spanTree{span: *span}
 			child.children = getChildSpans(span, allSpans)

@@ -71,6 +71,7 @@ func (t *traceConnector) startWorkers() {
 		t.workerWG.Add(1)
 		go func(id int) {
 			defer t.workerWG.Done()
+
 			for {
 				select {
 				case <-t.shutdownChannel:
@@ -93,6 +94,7 @@ func (t *traceConnector) startBatcher() {
 		defer t.batchWG.Done()
 		ticker := time.NewTicker(t.config.BatchTimeout)
 		defer ticker.Stop()
+
 		for {
 			select {
 			case <-t.shutdownChannel:
@@ -120,6 +122,7 @@ func (t *traceConnector) startSweeper() {
 		requeueTicker := time.NewTicker(t.config.BatchTimeout)
 		defer sweepTicker.Stop()
 		defer requeueTicker.Stop()
+
 		for {
 			select {
 			case <-t.shutdownChannel:
@@ -196,6 +199,7 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 
 	currentTime := time.Now()
 	waitingTimeNotExceeded := msg.receivedAt.Add(t.config.MaxEntityWaitTime).After(currentTime)
+
 	if jobState == JobStateNotFound && waitingTimeNotExceeded && t.started {
 		// Requeue non-blocking; if queue full, drop (avoid shutdown hang / deadlock)
 		// If the connector is shutdown we just process everything we have left
@@ -208,6 +212,7 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 	}
 
 	cache, entityWasCreated := t.ditoCache.getOrCreateEntityEntry(msg.fullEntityKey)
+
 	if entityWasCreated {
 		rootSpan := ptrace.NewSpan()
 		rootSpan.SetName(msg.fullEntityKey)
@@ -230,6 +235,7 @@ func (t *traceConnector) processMessage(msg *entityWorkItem) {
 	}
 
 	parentSpanId := cache.rootSpanId
+
 	if jobState != JobStateNotFound {
 		parentSpanId = newJobSpanId
 	}
@@ -306,6 +312,7 @@ func (t *traceConnector) flushOutput() {
 	resourceMap[defaultResourceHash] = &defaultScopeSpan
 
 	counter := 0
+
 	for len(t.outputQueue) > 0 {
 		span := <-t.outputQueue
 		counter++
@@ -351,6 +358,7 @@ func (t *traceConnector) flushOutput() {
 
 	t.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(t.ditoCache.messageQueue)))
 	err := t.traceConsumer.ConsumeTraces(context.Background(), batch)
+
 	if err != nil {
 		t.logger.Error("Error sending traces to next consumer", zap.Error(err))
 	}

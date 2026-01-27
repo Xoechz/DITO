@@ -17,6 +17,7 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 	capabilities := connector.Capabilities()
 	assert.False(t, capabilities.MutatesData)
 }
+
 func TestTracesConnector(t *testing.T) {
 	ctx := context.Background()
 

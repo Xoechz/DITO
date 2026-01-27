@@ -76,6 +76,7 @@ func newditoCache(cfg *Config, logger *zap.Logger) *ditoCache {
 		entityShards[i] = &entityInfoCacheShard{
 			entityInfoCache: make(map[string]*entityInfoCacheItem),
 		}
+
 		jobShards[i] = &jobCacheShard{
 			jobCache: make(map[pcommon.SpanID]*jobCacheItem),
 		}
@@ -183,6 +184,7 @@ func (sc *ditoCache) getJobSpan(entitySpan *ptrace.Span, fullEntityKey string) (
 
 	if !exists {
 		baggageJobSpanId, exists := entitySpan.Attributes().Get(sc.config.BaggageJobKey)
+
 		if !exists {
 			return nil, pcommon.SpanID{}, JobStateNotFound
 		}
@@ -211,6 +213,7 @@ func (sc *ditoCache) getJobSpan(entitySpan *ptrace.Span, fullEntityKey string) (
 
 	// If the job span was already used for this entityKey, return the same spanID
 	newSpanId, exists := jobItem.newJobSpanIds[fullEntityKey]
+
 	if exists {
 		return returnSpan, newSpanId, JobStateFound
 	}
@@ -241,8 +244,10 @@ func (sc *ditoCache) ingestTraces(td ptrace.Traces, cfg *Config) error {
 		rs := rss.At(i)
 		resource := rs.Resource()
 		ilss := rs.ScopeSpans()
+
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
+
 			for k := 0; k < ils.Spans().Len(); k++ {
 				sc.IngestSpan(ils.Spans().At(k), cfg, resource, now)
 			}
@@ -273,6 +278,7 @@ func (sc *ditoCache) IngestSpan(span ptrace.Span, cfg *Config, resource pcommon.
 	}
 
 	_, isJob := span.Attributes().Get(cfg.JobKey)
+
 	if isJob {
 		sc.addJobSpan(&span, &resource, now)
 	}
@@ -283,6 +289,7 @@ func (sc *ditoCache) sweep() {
 
 	for _, sh := range sc.entityShards {
 		sh.mu.Lock()
+
 		for k, e := range sh.entityInfoCache {
 			if e.createdAt.Add(sc.config.EntityCacheDuration).Before(now) {
 				delete(sh.entityInfoCache, k)
@@ -293,6 +300,7 @@ func (sc *ditoCache) sweep() {
 
 	for _, sh := range sc.jobShards {
 		sh.mu.Lock()
+
 		for k, e := range sh.jobCache {
 			if e.receivedAt.Add(sc.config.JobCacheDuration).Before(now) {
 				delete(sh.jobCache, k)

@@ -56,6 +56,7 @@ func (m *metricConnector) Start(_ context.Context, _ component.Host) error {
 	if m.started {
 		return nil
 	}
+
 	m.started = true
 
 	m.logger.Info("Starting dito metric connector")
@@ -65,6 +66,7 @@ func (m *metricConnector) Start(_ context.Context, _ component.Host) error {
 		defer m.workerWG.Done()
 		ticker := time.NewTicker(m.config.BatchTimeout)
 		defer ticker.Stop()
+
 		for {
 			select {
 			case <-m.shutdownChannel:
@@ -77,6 +79,7 @@ func (m *metricConnector) Start(_ context.Context, _ component.Host) error {
 				if len(m.ditoCache.messageQueue) >= m.config.BatchSize {
 					m.processMessages()
 				}
+
 				time.Sleep(10 * time.Millisecond) // small sleep to avoid busy loop
 			}
 		}
@@ -88,6 +91,7 @@ func (m *metricConnector) Start(_ context.Context, _ component.Host) error {
 		defer m.sweeperWG.Done()
 		sweepTicker := time.NewTicker(m.config.JobCacheDuration / 2)
 		defer sweepTicker.Stop()
+
 		for {
 			select {
 			case <-m.shutdownChannel:
@@ -135,6 +139,7 @@ func (m *metricConnector) processMessages() {
 
 	// drain the message queue to prevent infinite loop due to re-queuing
 	currentBatch := make([]*entityWorkItem, 0, len(m.ditoCache.messageQueue))
+
 	for len(m.ditoCache.messageQueue) > 0 {
 		msg := <-m.ditoCache.messageQueue
 		currentBatch = append(currentBatch, msg)
@@ -191,6 +196,7 @@ func (m *metricConnector) processMessages() {
 
 	m.logger.Debug("Flushed output", zap.Int("messageQueueLength", len(m.ditoCache.messageQueue)))
 	err := m.metricConsumer.ConsumeMetrics(context.Background(), metrics)
+
 	if err != nil {
 		m.logger.Error("Error sending metrics to next consumer", zap.Error(err))
 	}
@@ -232,12 +238,14 @@ func (m *metricConnector) getMetricGroups(currentBatch []*entityWorkItem) (*map[
 		}
 
 		var jobSpanSpan *ptrace.Span = nil
+
 		if jobState != JobStateNotFound {
 			metricGroup.jobSpanId = jobSpan.span.SpanID()
 			jobSpanSpan = jobSpan.span
 		}
 
 		mv, exists := metricGroups[metricGroup]
+
 		if !exists {
 			mv = metricValue{
 				count:   0,
