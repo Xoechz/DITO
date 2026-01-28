@@ -181,7 +181,7 @@ The following data is incomming(simplified):
 }
 ```
 
-```mermaid
+:::mermaid
 sequenceDiagram
 box default traces pipeline
 participant dr as otlp receiver
@@ -196,47 +196,47 @@ participant t3 as Worker 3
 participant to as outputQueue
 participant tf as flushOutput
 end
-box dito traces pipeline
+box swie_mon traces pipeline
 participant te as otlp exporter
 end
 
 dr->>tc: Input Traces 1
 tc->>tm: Enqueue entity spans 10 and 20
-tm->>t1: Dequeue entity span 10
-tm->>t2: Dequeue entity span 20
-t1->>tsc: lookup job span 1
+tm->>+t1: Dequeue entity span 10
+tm->>+t2: Dequeue entity span 20
+t1->>+tsc: lookup job span 1
 t2->>tsc: wait for lock
-tsc->>t1: not found
-t2->>tsc: lookup job span 2
-tsc->>t2: not found
-t1->>tm: Requeue entity span 10
-t2->>tm: Requeue entity span 10
+tsc->>-t1: not found
+t2->>+tsc: lookup job span 2
+tsc->>-t2: not found
+t1->>-tm: Requeue entity span 10
+t2->>-tm: Requeue entity span 10
 
 dr->>tc: Input Traces 2
 tc->>tm: Enqueue entity span 30
 tc->>tsc: Cache job span 1
 
-tm->>t3: Dequeue entity span 10
-tm->>t1: Dequeue entity span 20
-tm->>t2: Dequeue entity span 30
-t3->>tsc: lookup job span 1
+tm->>+t3: Dequeue entity span 10
+tm->>+t1: Dequeue entity span 20
+tm->>+t2: Dequeue entity span 30
+t3->>+tsc: lookup job span 1
 t1->>tsc: wait for lock
 t2->>tsc: wait for lock
-tsc->>t3: return job span 1
-t1->>tsc: lookup job span 1
-tsc->>t1: return job span 1
-t2->>tsc: lookup job span 1
-tsc->>t2: return job span 1
+tsc->>-t3: return job span 1
+t1->>+tsc: lookup job span 1
+tsc->>-t1: return job span 1
+t2->>+tsc: lookup job span 1
+tsc->>-t2: return job span 1
 
 t3->>to: Enqueue root span for entity a
 t3->>to: Enqueue result job span 1 in root a
-t3->>to: Enqueue result entity span 30 in root a
+t3->>-to: Enqueue result entity span 30 in root a
 
 t1->>to: Enqueue root span for entity b
 t1->>to: Enqueue result job span 1 in root b
-t1->>to: Enqueue result entity span 20 in root b
+t1->>-to: Enqueue result entity span 20 in root b
 
-t2->>to: Enqueue result entity span 30 in root a
+t2->>-to: Enqueue result entity span 30 in root a
 to->>tf: flushOutput
 tf->>te: Send flushed spans in a traces object
-```
+:::
