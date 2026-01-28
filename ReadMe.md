@@ -6,6 +6,7 @@
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Xoechz_DITO&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=Xoechz_DITO)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Xoechz_DITO&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Xoechz_DITO)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=Xoechz_DITO&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=Xoechz_DITO)
+[![Docker Image](https://badgen.net/docker/size/xoechz/dito/latest)](https://hub.docker.com/repository/docker/xoechz/dito)
 
 ![DITO](./logo.svg)
 
