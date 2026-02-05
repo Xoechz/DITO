@@ -182,7 +182,7 @@ The following data is incomming(simplified):
 }
 ```
 
-:::mermaid
+```mermaid
 sequenceDiagram
 box default traces pipeline
 participant dr as otlp receiver
@@ -240,4 +240,4 @@ t1->>-to: Enqueue result entity span 20 in root b
 t2->>-to: Enqueue result entity span 30 in root a
 to->>tf: flushOutput
 tf->>te: Send flushed spans in a traces object
-:::
+```
